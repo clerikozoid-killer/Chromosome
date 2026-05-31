@@ -1,0 +1,45 @@
+# DBSE v5.0 «Chromosome»
+
+Детерминированный физико-математический «компилятор реальности».
+LLM — только периферия (вход: парсинг, выход: стилизация). Вся истина — в символьных
+движках и строгой системе типов. Цель — **ноль галлюцинаций в ядре**.
+
+## Документация
+
+- [`DBSE v5.0 «Chromosome».txt`](DBSE%20v5.0%20%C2%ABChromosome%C2%BB.txt) — источник истины (спецификация).
+- [`ROADMAP.md`](ROADMAP.md) — поэтапный план реализации (послойное углубление).
+- [`docs/TESTING_AND_MENTOR.md`](docs/TESTING_AND_MENTOR.md) — стратегия тестирования и сопровождения.
+- [`docs/spec-notes.md`](docs/spec-notes.md) — заметки/расхождения и консолидация RFC.
+
+## Архитектура (пайплайн)
+
+```
+L0  MEMBRANE        (LLM parser, sandbox)
+L0.5 STS TYPING     (rule-based классификатор)
+L1  DIMENSIONS      ([M, L, T, I, Θ, N, J])
+L1.5 AFFINE TYPES   (Dimension + SemanticTag + rank + frame)
+L2  MODEL LATTICE   (P(Model | Context), T_ambig)
+L3  RIBOSOME        (AST compiler + canonical hash + cache)
+L4  CYTOPLASM       (epigenetics + domain plugins)
+L5  NUCLEUS         (SymPy/Z3 + Continuous Invariant Monitor)
+L6  NARRATIVE       (semantic narrative graph, шаблоны)
+L7  EXPRESSION      (constrained LLM styling)
+```
+
+## Статус
+
+Этап 0 — фундамент: каркас, контракты данных, слои-заглушки, QA-инфраструктура.
+Слои пока pass-through; логика добавляется по этапам из `ROADMAP.md` (test-first).
+
+## Разработка
+
+```bash
+python -m venv .venv
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+
+ruff check .
+mypy
+pytest
+```

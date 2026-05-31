@@ -1,0 +1,1297 @@
+### USER
+можешь изучить проект по данной ссылке - https://chatgpt.com/share/6a148ce1-b374-83ea-a539-ce1c02b1c1fc ? мне нужен твой подробный анализ и выявление возможности улучшения и предиктивного выявления уязвимостей.
+
+### ASSISTANT
+Изучив техническое задание на **Deterministic Bio-Semantic Engine (DBSE/BSE Unified v4.0 «Helix»)**, я подготовил подробный анализ архитектуры, выявил точки роста и провёл предиктивный аудит уязвимостей.
+
+Проект представляет собой концептуально выверенную попытку создать «физико-математический компилятор реальности». Отказ от стохастической генерации (свойственной LLM) в пользу детерминированных символьных вычислений и формальной верификации — это безальтернативный путь для систем, где цена ошибки (галлюцинации) неприемлема.
+
+Ниже представлен детальный разбор.
+
+---
+
+### 1. Подробный анализ архитектуры и концепции
+
+**Сильные стороны и инновации:**
+*   **Разделение «Мышления» и «Речи»:** Архитектурное решение использовать LLM *только* как парсер (MEMBRANE) и стилизатор (EXPRESSION), переложив всю логику на символьные движки (SymPy, Z3), полностью нивелирует проблему галлюцинаций в математическом ядре.
+*   **Биомиметический Pipeline (Helix):** Модель 5-слойной клетки (Membrane → Ribosome → Cytoplasm → Nucleus → Expression) не просто метафора, а отличная схема для конвейерной обработки данных. Она позволяет внедрять **Early Pruning** (раннее отсечение): если размерности не сходятся на этапе Ribosome, система не тратит дорогостоящие ресурсы Z3/SymPy в Nucleus.
+*   **Размерностный анализ (L1) как Firewall:** Использование строгой проверки `[M L T⁻²]` в качестве первого эшелона защиты — гениальное по простоте и эффективности решение. Это фильтр, который отсекает 90% абсурдных входных данных и логических ошибок.
+*   **Концепция Tinfo (Информационная температура):** Метрика доверия к результату (0.0 — строгая физика, >0.5 — эвристика) — это прорыв в области Explainable AI (XAI). Пользователь сразу видит, насколько «идеализирована» модель.
+
+---
+
+### 2. Возможности для улучшения (Enhancements)
+
+#### А. Изоморфный кэш графов (Graph Isomorphism Cache)
+В ТЗ упомянут LRU cache свернутых AST. Однако точное совпадение AST происходит редко.
+*   **Улучшение:** Внедрить поиск **изоморфных подграфов**. Если система решила задачу про «падение тела с учётом сопротивления», она должна уметь применять этот же граф решения к задаче про «разрядку конденсатора через резистор», так как математически это одно и то же линейное ОДУ 1-го порядка.
+*   **Инструмент:** Использование графовых СУБД (Neo4j, Memgraph) или векторного поиска по топологии AST.
+
+#### Б. Автоматический вывод безразмерных критериев
+Сейчас контекст (Cytoplasm) задаётся пользователем (например, `vacuum` или `v≪c`).
+*   **Улучшение:** Система должна сама вычислять безразмерные числа (Рейнольдса, Маха, Фруда) на этапе Ribosome и автоматически применять эпигенетические ограничения. Например, если `Re > 1000`, система сама должна переключить модель трения с линейной ($F \sim v$) на квадратичную ($F \sim v^2$) без участия человека.
+
+#### В. Визуализация трассировки (Proof Trace UI)
+JSON-ответ с `solver_path` хорош для API, но для человека критически важна визуализация.
+*   **Улучшение:** Генерация графа рассуждений в формате **Mermaid** или **DOT**. Пользователь должен видеть не просто ответ, а дерево: *«Аксиома А + Условие Б → Лемма В → Применение теоремы Г»*.
+
+---
+
+### 3. Предиктивное выявление уязвимостей (Vulnerability Assessment)
+
+Несмотря на детерминированность, система имеет специфические векторы атак и точки отказа.
+
+#### 🔴 Уязвимость 1: Семантическая коллизия размерностей (Affine Type Vulnerability)
+*   **Суть:** Проверка размерностей (L1) necessary, но не sufficient. Момент силы (Torque) и Энергия (Energy) имеют **одинаковую размерность** $[M L^2 T^{-2}]$ (Джоули vs Ньютон-метры). Система может попытаться сложить кинетическую энергию и момент силы, и L1 пропустит это, что приведёт к физическому абсурду и ошибке в Nucleus.
+*   **Митигация:** Внедрение **Affine Types** (аффинных типов). Размерность должна включать не только базис `[M,L,T]`, но и семантический тег: `[Energy]` vs `[Torque]`. Сложение разрешено только при совпадении тегов.
+
+#### 🔴 Уязвимость 2: Отравление через LLM-Fallback (Prompt Injection / Poisoning)
+*   **Суть:** В п. 4.1 указано, что LLM используется как fallback для парсинга нестандартного LaTeX. Злоумышленник может подать входные данные, которые заставят LLM скрытно внедрить ложные допущения в JSON (например, заменить `g = 9.81` на `g = -9.81` или добавить невидимый оператор `SUPPRESS(friction)`).
+*   **Митигация:** Жёсткая валидация JSON-схемы на выходе из LLM. LLM-парсер должен работать в «песочнице» и не иметь права генерировать узлы типа `INVARIANT` или `CONTEXT` — только `OBJECT` и базовые `OPERATOR`.
+
+#### 🔴 Уязвимость 3: Динамическое нарушение инвариантов (ODE Drift)
+*   **Суть:** Эпигенетика (Cytoplasm) проверяет ограничения (например, `v ≪ c` — нерелятивистский случай) только на старте. Но при решении ОДУ в Nucleus скорость $v(t)$ может математически превысить $c$ из-за особенностей решения. Система выдаст математически верный, но физически невозможный результат (нарушение специальной теории относительности).
+*   **Митигация:** **Continuous Invariant Monitoring**. Проверка ограничений должна происходить не один раз на входе, а на каждом шаге интегрирования ОДУ (или через Z3 SMT-проверку на всём интервале $[t_0, t_{end}]$). При нарушении — немедленный halt и возврат `Proof Level: P3 (Model breakdown)`.
+
+#### 🔴 Уязвимость 4: Галлюцинации на этапе Экспрессии (ELI5 Hallucination)
+*   **Суть:** На этапе EXPRESSION GENES LLM преобразует AST в текст «для пятилетнего» (ELI5). LLM может правильно посчитать цифры, но в тексте выдумать ложную причинно-следственную связь (например: *«Тело упало быстрее, потому что Земля его сильнее притянула из-за массы»*, что фундаментально неверно).
+*   **Митигация:** Использовать **Constrained Decoding** (например, фреймворки Outlines или Guidance). LLM разрешается генерировать только те слова и связки, которые жёстко привязаны к узлам AST. Либо использовать детерминированные шаблоны текста, а LLM применять только для стилизации (синонимы).
+
+#### 🟡 Уязвимость 5: Комбинаторный взрыв в Z3 (SMT Timeout)
+*   **Суть:** Z3 (SMT-решатель) может уйти в бесконечный перебор при попытке доказать теорему для нелинейной системы ограничений, даже в рамках MVP. Это приведёт к зависанию воркера и DDoS-уязвимости сервиса.
+*   **Митигация:** Жёсткие таймауты (Budgeting) на уровне Nucleus. Если Z3 не находит доказательство за $N$ миллисекунд, система принудительно прерывает ветку, помечает её как `Unverified (L3 Fail)` и fallback-ит на численные методы (P2), обязательно повышая `Tinfo` (предупреждая пользователя о снижении строгости).
+
+---
+
+### Резюме
+Проект **DBSE v4.0 Helix** имеет колоссальный потенциал стать стандартом для инженерного и научного ПО (CAD/CAE/EDA).
+Главный риск лежит не в математике, а на **стыках (интерфейсах)**: между естественным языком и графом (парсинг), между статической моделью и динамическим решением ОДУ (инварианты), и между сухим AST и человеческим текстом (экспрессия). Устранение описанных выше уязвимостей на этапе Sprint 1-2 критически важно для жизнеспособности MVP.
+
+### USER
+посмотри на парирование chatgpt - возьми лучшее, адекватную критику - и сделай новое крайне подробное ТЗ по этому проекту (важна каждая деталь): Это довольно качественный аудит. В нём есть несколько действительно сильных попаданий, а есть вещи, которые звучат убедительно, но при реализации могут увести проект в ненужную сложность. Разберу как если бы я был архитектором ядра и решал: «внести в Unified Spec / отложить / отклонить».
+
+Что я бы однозначно добавил в ядро (очень сильные замечания)
+1. Affine Types / Semantic Dimensions — обязательно
+
+Это не улучшение, а фактически исправление архитектурной дыры.
+
+Сейчас у тебя:
+
+Energy=[ML
+2
+T
+−2
+]
+Torque=[ML
+2
+T
+−2
+]
+
+L1 пропустит:
+
+Energy+Torque
+
+что физически бессмысленно.
+
+Нужна двухуровневая типизация:
+
+Type=(Dimension,SemanticTag)
+
+то есть:
+
+Energy=([ML
+2
+T
+−2
+],Energy)
+Torque=([ML
+2
+T
+−2
+],Torque)
+
+Тогда правило:
+
+A+B
+
+валидно только если:
+
+Dim(A)=Dim(B)
+
+и
+
+Semantic(A)=Semantic(B)
+
+Иначе:
+
+TypeError:
+Semantic mismatch:
+Energy ≠ Torque
+
+Это уже не L1.
+
+Я бы добавил новый слой:
+
+уровень	проверка
+L1	размерности
+L1.5	семантические типы
+L2	алгебра
+L3	логика
+L4	интервалы
+2. Continuous Invariant Monitoring — обязательно
+
+Это тоже попадание.
+
+Сейчас:
+
+[v<<c]
+
+проверяется единожды.
+
+Но если решается:
+
+m
+dt
+dv
+	​
+
+=F
+
+может выйти:
+
+v(t)>c
+
+и система не заметит.
+
+Нужен механизм:
+
+InvariantMonitor
+
+пример:
+
+Constraint:
+v<c
+
+check:
+∀t∈[t0,tend]
+
+Если:
+
+∃t : v≥c
+
+то:
+
+MODEL_BREAKDOWN
+Proof=P3
+
+или:
+
+SwitchModel(RelativisticMechanics)
+
+Это важно не только для физики.
+
+Экономика:
+
+P(probability)>1
+
+Социология:
+
+population<0
+
+Код:
+
+array index > length
+3. Constrained Expression — обязательно
+
+Тоже очень сильное замечание.
+
+Сейчас ELI5 опасен.
+
+AST:
+
+Force→Acceleration
+
+LLM может написать:
+
+Земля сильнее притянула тяжелый предмет
+
+хотя вычисления верны.
+
+Нужен промежуточный слой:
+
+Semantic Narrative Graph
+
+AST:
+
+Force
+→Acceleration
+→Velocity
+
+↓
+
+Template:
+
+"{Force} изменяет {Acceleration},
+что приводит к изменению {Velocity}"
+
+↓
+
+LLM:
+
+только стилизация.
+
+Не генерация логики.
+
+Что полезно, но не для MVP
+4. Изоморфный кэш
+
+Идея отличная:
+
+падение тела:
+
+m
+dt
+dv
+	​
+
+=mg−kv
+
+разряд RC:
+
+RC
+dt
+dV
+	​
+
++V=0
+
+математически:
+
+dt
+dx
+	​
+
+=a−bx
+
+одна структура.
+
+Но проблема:
+
+поиск изоморфизма графов дорог.
+
+Полная задача:
+
+O(n!)
+
+приблизительно.
+
+Для MVP я бы сделал проще:
+
+Canonical AST Hash.
+
+Например:
+
+dX/dt=a−bX
+
+↓
+
+LinearODE(order=1)
+
+↓
+
+hash(LinearODE,1)
+
+А уже позже — полноценный изоморфный поиск.
+
+5. Автоматическое вычисление критериев Рейнольдса и др.
+
+Идея правильная.
+
+Но это уже не ядро, а библиотека домена.
+
+Я бы оформил как:
+
+DomainPlugin:
+FluidMechanics
+
+с правилами:
+
+if Re<2300:
+    Laminar
+
+if Re≥2300:
+    Turbulent
+
+Аналогично:
+
+Экономика:
+
+InflationRate>threshold
+→ monetary policy switch
+
+Социум:
+
+SocialStress>threshold
+→ instability model
+
+Не ядро, а надстройка.
+
+Что я бы не добавлял вообще
+CRISPR/самоисцеление в ядро
+
+Вот здесь я бы поспорил с Qwen.
+
+Звучит красиво:
+
+система сама чинит свои аксиомы
+
+Но это опасно.
+
+Представь:
+
+Было:
+
+F=ma
+
+Новый шум:
+
+F=ma²
+
+Иммунитет решает:
+
+возможно инвариант неполный
+
+и меняет правило.
+
+Ты уничтожил базовую физику.
+
+Ядро не должно изменять аксиомы.
+
+Правильнее:
+
+Core axioms:
+read-only
+
+Hypothesis Layer:
+mutable
+
+Схема:
+
+Core Truth Layer
+    ↓
+Hypothesis Layer
+    ↓
+Experiment Layer
+
+Новые знания идут только сюда:
+
+Hypothesis:
+confidence=0.23
+
+но не трогают ядро.
+
+Что бы я добавил поверх анализа Qwen
+
+Есть одна проблема, которую он не заметил.
+
+Контекстная неоднозначность
+
+Запрос:
+
+Сколько стоит яблоко?
+
+Возможные модели:
+
+M1:
+
+Apple=fruit
+
+M2:
+
+Apple=company
+
+M3:
+
+Apple stock
+
+Размерности не помогут.
+
+STS тоже не поможет.
+
+Нужен механизм:
+
+P(Model
+i
+	​
+
+∣Context)
+
+например:
+
+Model Lattice
+Fruit:0.75
+Company:0.20
+Stock:0.05
+
+Если энтропия большая:
+
+T
+ambiguity
+	​
+
+>0.5
+
+система не отвечает:
+
+цена = X
+
+а пишет:
+
+Недостаточно контекста
+
+или показывает несколько моделей.
+
+Это критично для бытового мира.
+
+Итоговая оценка предложений Qwen:
+
+Идея	Оценка	Действие
+Affine Types	10/10	добавить в ядро
+Continuous Invariants	10/10	добавить
+Constrained Expression	9/10	добавить
+Graph Isomorphism Cache	8/10	позже
+Авто-Reynolds	7/10	доменный плагин
+CRISPR самоисцеление ядра	3/10	не делать
+Контекстный Model Lattice (моё дополнение)	10/10	обязательно
+
+Если собирать следующий уровень Unified Spec, я бы уже обновил архитектуру до:
+
+MEMBRANE
+↓
+STS Typing
+↓
+L1 Dimensions
+↓
+L1.5 Semantic Types
+↓
+Context Model Lattice
+↓
+AST Compiler
+↓
+NUCLEUS
+↓
+Continuous Invariant Monitor
+↓
+Expression Templates
+↓
+LLM Styling
+
+Это уже начинает выглядеть не как «LLM с графом», а как полноценная вычислительная операционная система для знаний.
+
+### ASSISTANT
+# Unified Bio-Semantic Engine Specification v5.0 «Chromosome»
+
+**Статус:** Release Candidate 1  
+**Классификация:** Детерминированный физико-математический компилятор реальности  
+**Философия:** Ядро — это операционная система знаний, LLM — лишь периферия (ввод/вывод)
+
+---
+
+## 0. Философский манифест
+
+DBSE v5.0 «Chromosome» — это не «LLM с графом», а полноценная **вычислительная операционная система для знаний**, в которой:
+
+1. **Ядро аксиом священно** (`read-only Core Truth Layer`)
+2. **Гипотезы изолированы** (`mutable Hypothesis Layer` с `confidence ∈ [0,1]`)
+3. **Контекст — это распределение вероятностей**, а не бинарный выбор (`Model Lattice`)
+4. **Физическая осмысленность первичнее математической корректности** (Semantic Dimensions)
+5. **Инварианты проверяются непрерывно**, а не на входе
+6. **LLM — не генератор смысла, а стилизатор** (Constrained Expression)
+
+---
+
+## 1. Архитектурный пайплайн (11 слоёв)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    INPUT (Natural Language)                 │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L0. MEMBRANE (LLM Parser) — только извлечение сущностей    │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L0.5. STS TYPING (Strict Syntax Typing)                    │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L1. DIMENSIONAL ANALYSIS [M, L, T, I, Θ, N, J]             │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L1.5. AFFINE TYPES (Dimension, SemanticTag)                │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L2. CONTEXT MODEL LATTICE (P(Model_i | Context))           │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L3. RIBOSOME (AST Compiler) → Canonical Hash               │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L4. CYTOPLASM (Epigenetics + Domain Plugins)               │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L5. NUCLEUS (SymPy/Z3 + Continuous Invariant Monitor)      │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L6. SEMANTIC NARRATIVE GRAPH (Templates)                   │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│  L7. EXPRESSION GENES (Constrained LLM Styling)             │
+└────────────────────────────┬────────────────────────────────┘
+                             ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    OUTPUT (JSON + ELI5 + Proof)             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Детальное описание слоёв
+
+### L0. MEMBRANE (LLM Parser)
+
+**Принцип:** LLM — не источник истины, а OCR для смысла.
+
+**Жёсткие ограничения:**
+- Разрешено генерировать ТОЛЬКО следующие типы узлов:
+  - `OBJECT` (физические сущности)
+  - `QUANTITY` (числовые значения с единицами)
+  - `RELATION` (связи между объектами)
+  - `QUESTION_TYPE` (классификация запроса: compute/prove/explain)
+- **ЗАПРЕЩЕНО** генерировать:
+  - `INVARIANT` (правила физики)
+  - `CONTEXT` (доменные допущения)
+  - `OPERATOR` (математические операции)
+
+**Output Schema (строго валидируется Pydantic/Zod):**
+
+```json
+{
+  "objects": [
+    {"id": "obj_1", "type": "body", "label": "apple"},
+    {"id": "obj_2", "type": "planet", "label": "Earth"}
+  ],
+  "quantities": [
+    {"ref": "obj_1", "property": "mass", "value": 0.1, "unit": "kg"},
+    {"ref": "obj_2", "property": "mass", "value": 5.972e24, "unit": "kg"}
+  ],
+  "relations": [
+    {"type": "distance", "from": "obj_1", "to": "obj_2", "value": 6371000, "unit": "m"}
+  ],
+  "question_type": "compute",
+  "target": {"ref": "obj_1", "property": "gravitational_force"}
+}
+```
+
+**Митигация Prompt Injection:** LLM работает в sandbox, любые попытки выйти за схему → fallback на manual clarification.
+
+---
+
+### L0.5. STS Typing (Strict Syntax Typing)
+
+**Новый слой, предложенный ChatGPT.**
+
+Назначение: классификация типа запроса до начала любого анализа.
+
+**Классификатор (rule-based, не LLM):**
+
+| Тип запроса | Характеристика | Дальнейший путь |
+|---|---|---|
+| `PHYSICS_COMPUTE` | есть физические величины, единицы | полный пайплайн |
+| `MATH_PROVE` | формальная логика, теоремы | NUCLEUS только |
+| `DEFINITION` | "что такое X" | только Expression layer |
+| `OPINION` | субъективные маркеры | отказ с кодом `UNHANDLED` |
+| `AMBIGUOUS` | несколько возможных интерпретаций | L2 Model Lattice |
+
+---
+
+### L1. Dimensional Analysis
+
+**Базис СИ:** `[M, L, T, I, Θ, N, J]`
+
+**Правила:**
+- `Dim(A + B) = Dim(A) = Dim(B)` (строго)
+- `Dim(A × B) = Dim(A) · Dim(B)` (мультипликативно)
+- `Dim(f(A))` для трансцендентных функций: `A` должно быть безразмерным
+  - `sin(5 kg)` → `DimensionError: Argument must be dimensionless`
+
+**Результат:** Вектор целых чисел `[m, l, t, i, θ, n, j]`.
+
+---
+
+### L1.5. Affine Types (CRITICAL — архитектурное ядро)
+
+**Формальное определение:**
+
+```python
+@dataclass(frozen=True)
+class AffineType:
+    dimension: tuple[int, int, int, int, int, int, int]  # [M,L,T,I,Θ,N,J]
+    semantic_tag: str  # "Energy", "Torque", "Work", "Heat"...
+    tensor_rank: int   # 0=скаляр, 1=вектор, 2=тензор
+    frame_of_reference: Optional[str]  # "lab", "comoving"...
+```
+
+**Примеры:**
+
+| Сущность | Dimension | Semantic Tag | Tensor Rank |
+|---|---|---|---|
+| Кинетическая энергия | `[1,2,-2,0,0,0,0]` | `Energy` | 0 |
+| Момент силы | `[1,2,-2,0,0,0,0]` | `Torque` | 1 (псевдовектор!) |
+| Работа | `[1,2,-2,0,0,0,0]` | `Work` | 0 |
+| Теплота | `[1,2,-2,0,0,0,0]` | `Heat` | 0 |
+
+**Правила совместимости:**
+
+```python
+def compatible(a: AffineType, b: AffineType, op: Operator) -> bool:
+    if op in {ADD, SUBTRACT}:
+        return (a.dimension == b.dimension and 
+                a.semantic_tag == b.semantic_tag and
+                a.tensor_rank == b.tensor_rank)
+    if op in {DOT_PRODUCT}:
+        return (a.tensor_rank == 1 and b.tensor_rank == 1 and
+                a.dimension == b.dimension)
+    if op in {CROSS_PRODUCT}:
+        return (a.semantic_tag == b.semantic_tag == "PolarVector")
+    return True  # для умножения/деления
+```
+
+**Результат коллизии:**
+```
+TypeError: Semantic mismatch at L1.5
+  Left:  AffineType([1,2,-2,0,0,0,0], "Energy", 0)
+  Right: AffineType([1,2,-2,0,0,0,0], "Torque", 1)
+  Operation: ADD
+  Suggestion: Did you mean "Work + Heat → Internal Energy"?
+```
+
+---
+
+### L2. Context Model Lattice (КРИТИЧНОЕ ДОПОЛНЕНИЕ)
+
+**Проблема, которую не заметили ранее:** контекстная неоднозначность.
+
+**Запрос:** «Сколько стоит яблоко?»
+
+**Возможные модели:**
+- $M_1$: `Apple = fruit` (цена за кг)
+- $M_2$: `Apple = company` (капитализация)
+- $M_3$: `AAPL = stock` (котировки)
+
+**Формализация:**
+
+```python
+@dataclass
+class ModelNode:
+    model_id: str
+    prior: float                    # P(Model)
+    likelihood: float               # P(Context | Model)
+    posterior: float                # P(Model | Context) ∝ prior × likelihood
+    entropy_contribution: float
+    
+class ModelLattice:
+    nodes: list[ModelNode]
+    total_entropy: float
+    dominant_model: ModelNode
+    ambiguity_temperature: float    # T_ambiguity ∈ [0, 1]
+```
+
+**Расчёт T_ambiguity (температура неоднозначности):**
+
+$$T_{\text{ambig}} = \frac{H(\text{lattice})}{\log(N_{\text{models}})} = -\frac{1}{\log N}\sum_{i=1}^{N} p_i \log p_i$$
+
+| $T_{\text{ambig}}$ | Поведение системы |
+|---|---|
+| $< 0.3$ | Доминирует одна модель, продолжаем |
+| $0.3 \le T < 0.6$ | Показываем топ-2 модели с вероятностями |
+| $\ge 0.6$ | **ОТКАЗ**: «Недостаточно контекста. Уточните: ...» |
+
+**Пример ответа при $T_{\text{ambig}} = 0.7$:**
+
+```json
+{
+  "status": "ambiguity_halt",
+  "message": "Недостаточно контекста. Возможные интерпретации:",
+  "candidates": [
+    {"model": "fruit_price", "probability": 0.42, "clarification": "Цена за кг яблок в магазине?"},
+    {"model": "stock_price", "probability": 0.38, "clarification": "Котировки акций AAPL?"},
+    {"model": "company_valuation", "probability": 0.20, "clarification": "Рыночная капитализация Apple Inc.?"}
+  ]
+}
+```
+
+---
+
+### L3. RIBOSOME (AST Compiler + Canonical Hash)
+
+**Canonical AST Hash** (упрощение вместо полного изоморфизма для MVP):
+
+```python
+def canonical_hash(ast: AST) -> str:
+    """
+    Приводит AST к канонической форме:
+    1. Переименование переменных → x_1, x_2, ...
+    2. Сортировка коммутативных операций
+    3. Свёртка констант
+    4. Классификация типа ОДУ/алгебраической структуры
+    """
+    normalized = normalize_ast(ast)
+    structure_class = classify_structure(normalized)
+    # Например: "LinearODE_Order1_Homogeneous"
+    return sha256(f"{structure_class}:{normalized.to_canonical()}".encode()).hexdigest()[:16]
+```
+
+**Кэш (LRU + semantic):**
+
+```python
+cache: Dict[str, CacheEntry] = {
+    "a1b2c3d4...": {
+        "ast": original_ast,
+        "solution": solver_result,
+        "proof_level": "P0",
+        "tinfo": 0.02,
+        "hits": 42
+    }
+}
+```
+
+**При совпадении хэша** — решение возвращается мгновенно, минуя NUCLEUS.
+
+---
+
+### L4. CYTOPLASM (Epigenetics + Domain Plugins)
+
+**Domain Plugin API:**
+
+```python
+class DomainPlugin(Protocol):
+    domain: str                       # "fluid_mechanics", "economics"...
+    dimensionless_numbers: list[str]  # ["Reynolds", "Mach"...]
+    
+    def compute_indicators(self, context: Context) -> dict[str, float]: ...
+    
+    def select_model(self, indicators: dict) -> Model: ...
+    
+    def inject_constraints(self, context: Context) -> list[Constraint]: ...
+```
+
+**Пример: FluidMechanicsPlugin**
+
+```python
+class FluidMechanicsPlugin(DomainPlugin):
+    domain = "fluid_mechanics"
+    dimensionless_numbers = ["Reynolds", "Mach", "Froude"]
+    
+    def select_model(self, indicators):
+        Re = indicators["Reynolds"]
+        Ma = indicators["Mach"]
+        
+        if Ma > 0.3:
+            return CompressibleNavierStokes()
+        elif Re > 2300:
+            return TurbulentNavierStokes(kEpsilon=True)
+        elif Re > 1:
+            return LaminarNavierStokes()
+        else:
+            return StokesFlow()  # creeping flow
+    
+    def inject_constraints(self, context):
+        return [
+            Constraint("div(v) = 0", type="continuity"),
+            Constraint("no_slip", boundary="walls")
+        ]
+```
+
+---
+
+### L5. NUCLEUS (SymPy/Z3 + Continuous Invariant Monitor)
+
+**Архитектура ядра решения:**
+
+```python
+class Nucleus:
+    def solve(self, ast: AST, constraints: list[Constraint]) -> Solution:
+        # 1. Выбор решателя
+        solver = self._select_solver(ast.complexity)
+        
+        # 2. Решение с непрерывным мониторингом
+        monitor = ContinuousInvariantMonitor(constraints)
+        
+        if ast.is_ode:
+            solution = solver.solve_ode(
+                ast,
+                monitor_callback=monitor.check_invariants
+            )
+        else:
+            solution = solver.solve_algebraic(ast)
+            monitor.check_static(solution)
+        
+        # 3. Верификация Z3 (если требуется P0/P1)
+        if self.required_proof_level >= ProofLevel.P1:
+            proof = self._verify_with_z3(solution)
+        else:
+            proof = Proof(level=ProofLevel.P2, status="numeric_only")
+        
+        return Solution(value=solution, proof=proof)
+```
+
+**Continuous Invariant Monitor (детали):**
+
+```python
+class ContinuousInvariantMonitor:
+    def __init__(self, invariants: list[Invariant]):
+        self.invariants = invariants
+        self.violations = []
+    
+    def check_invariants(self, t: float, state: dict) -> bool:
+        """Вызывается на каждом шаге интегрирования ОДУ"""
+        for inv in self.invariants:
+            value = inv.evaluate(t, state)
+            if not inv.satisfies(value):
+                self.violations.append({
+                    "invariant": inv.name,
+                    "time": t,
+                    "value": value,
+                    "threshold": inv.threshold
+                })
+                return False  # halt integration
+        return True
+    
+    def check_static(self, solution):
+        """Для алгебраических решений"""
+        # Проверка на дискретной сетке точек
+        t_grid = np.linspace(solution.t0, solution.t_end, 1000)
+        for t in t_grid:
+            if not self.check_invariants(t, solution.at(t)):
+                return ModelBreakdownError()
+```
+
+**Пример инвариантов:**
+
+| Инвариант | Область | Тип |
+|---|---|---|
+| `v < c` | Специальная теория относительности | Критический |
+| `population >= 0` | Биология/Экономика | Критический |
+| `P(event) ∈ [0,1]` | Теория вероятностей | Критический |
+| `T > 0 K` | Термодинамика | Критический |
+| `array_index < length` | Программирование | Критический |
+| `energy_conserved` | Замкнутая система | Мягкий (с `tolerance=1e-6`) |
+
+**Реакция на нарушение:**
+
+```python
+if violation.severity == CRITICAL:
+    return Proof(
+        level=ProofLevel.P3,
+        status="MODEL_BREAKDOWN",
+        message=f"Инвариант '{violation.name}' нарушен в t={violation.time}",
+        suggestion="Возможно, требуется релятивистская/нелинейная модель"
+    )
+```
+
+---
+
+### L6. Semantic Narrative Graph
+
+**Промежуточный слой между AST и текстом.**
+
+**Цель:** исключить галлюцинации причинно-следственных связей на этапе ELI5.
+
+```python
+@dataclass
+class NarrativeNode:
+    ast_node: ASTNode
+    template: str                     # "{subject} вызывает {effect}"
+    allowed_verbs: list[str]          # ["увеличивает", "уменьшает", "нейтрально"]
+    forbidden_metaphors: list[str]    # ["хочет", "пытается", "любит"]
+    
+class SemanticNarrativeGraph:
+    def build(self, ast: AST) -> NarrativeGraph:
+        graph = NarrativeGraph()
+        for node in ast.topological_sort():
+            # Выбор шаблона по типу операции
+            if node.op == "CAUSAL_FORCE":
+                template = "{force} вызывает {acceleration} у {body}"
+                allowed = ["вызывает", "приводит к", "обуславливает"]
+            elif node.op == "CONSERVATION":
+                template = "{quantity} сохраняется в {system}"
+                allowed = ["сохраняется", "остаётся постоянным"]
+            # ... и так для всех операторов
+            
+            graph.add_node(NarrativeNode(
+                ast_node=node,
+                template=template,
+                allowed_verbs=allowed,
+                forbidden_metaphors=["хочет", "пытается", "стремится"]
+            ))
+        return graph
+    
+    def to_text(self) -> str:
+        # Генерируем skeleton-текст БЕЗ LLM
+        sentences = []
+        for node in self.topological():
+            sentence = node.template.format(**node.ast_node.bindings)
+            sentences.append(sentence)
+        return " ".join(sentences)
+```
+
+**Результат:** LLM получает уже логически выверенный skeleton и может **только**:
+- Синонимизировать глаголы из `allowed_verbs`
+- Добавлять стилистические связки
+- Упрощать язык (ELI5, academic, business)
+
+**LLM НЕ МОЖЕТ:**
+- Добавлять новые причинно-следственные связи
+- Менять порядок событий
+- Вводить метафоры из `forbidden_metaphors`
+
+---
+
+### L7. Expression Genes (Constrained LLM Styling)
+
+**Используется Outlines / Guidance / Instructor для constrained decoding:**
+
+```python
+from outlines import models, generate
+
+model = models.transformers("Qwen/Qwen2.5-14B-Instruct")
+stylist = generate.json(model, ExpressionSchema)
+
+# Schema жёстко ограничивает:
+class ExpressionSchema(BaseModel):
+    eli5: str = Field(description="Простой язык, только из Narrative Graph")
+    academic: str = Field(description="Формальный стиль")
+    business: str = Field(description="Для презентации")
+    metaphors_used: list[str]  # Только из whitelist
+    
+    @validator("eli5")
+    def check_logic_preserved(cls, v):
+        # Проверяем, что причинно-следственные связи сохранены
+        ...
+```
+
+---
+
+## 3. Уровни доказательства (Proof Levels) — формализация
+
+```python
+class ProofLevel(Enum):
+    P0 = "AXIOMATIC_PROOF"        # Доказано Z3 из Core Axioms
+    P1 = "VERIFIED_NUMERIC"       # Верифицировано Z3 + численно
+    P2 = "NUMERIC_ONLY"           # Только численное решение
+    P3 = "MODEL_BREAKDOWN"        # Нарушен инвариант, модель неприменима
+    P4 = "HEURISTIC"              # Эвристика, Tinfo > 0.5
+
+@dataclass
+class Proof:
+    level: ProofLevel
+    z3_steps: list[ProofStep] = field(default_factory=list)
+    tinfo: float = 0.0            # Информационная температура [0,1]
+    solver_path: list[str] = field(default_factory=list)
+    violations: list[Violation] = field(default_factory=list)
+    confidence: float = 1.0       # Уверенность в результате
+```
+
+**Метрика Tinfo (информационная температура):**
+
+```python
+def compute_tinfo(proof: Proof) -> float:
+    tinfo = 0.0
+    tinfo += 0.1 * count_heuristic_assumptions(proof)
+    tinfo += 0.2 * count_approximations(proof)
+    tinfo += 0.3 * count_linearizations(proof)
+    tinfo += 0.4 * count_domain_switches(proof)
+    return min(tinfo, 1.0)
+```
+
+**Правила для пользователя:**
+- `Tinfo < 0.2`: Результат достоверен (строгая физика)
+- `0.2 ≤ Tinfo < 0.5`: Использованы приближения, требуется осторожность
+- `Tinfo ≥ 0.5`: Результат эвристический, только для оценки
+
+---
+
+## 4. Core vs Hypothesis Layer (Архитектурный императив)
+
+```python
+class KnowledgeLayer:
+    pass
+
+class CoreTruthLayer(KnowledgeLayer):
+    """НЕИЗМЕНЯЕМО. Аксиомы физики, математики, логики."""
+    __frozen__ = True
+    
+    axioms: dict[str, Axiom] = {
+        "newton_2": Axiom("F = m*a", domain="classical_mechanics"),
+        "conservation_energy": Axiom("dE/dt = 0", domain="closed_system"),
+        "excluded_middle": Axiom("P ∨ ¬P", domain="logic"),
+        # ... read-only
+    }
+
+class HypothesisLayer(KnowledgeLayer):
+    """ИЗМЕНЯЕМО. Новые знания, эксперименты, гипотезы."""
+    hypotheses: dict[str, Hypothesis]
+    
+    @dataclass
+    class Hypothesis:
+        statement: str
+        confidence: float            # 0.0 - 1.0
+        evidence_count: int
+        created_at: datetime
+        last_tested: datetime
+        conflicts_with: list[str]    # ID гипотез в конфликте
+    
+    def add_hypothesis(self, h: Hypothesis):
+        if h.confidence < 0.1:
+            return  # Слишком слабая
+        if self._conflicts_with_core(h):
+            raise CoreViolationError(
+                f"Гипотеза '{h.statement}' противоречит Core Axioms"
+            )
+        self.hypotheses[h.id] = h
+```
+
+**CRISPR-паттерн ОТКЛОНЁН для ядра:**
+- Система **НЕ МОЖЕТ** модифицировать Core axioms ни при каких условиях
+- Любые расхождения между наблюдениями и Core → помечаются как `anomaly` и требуют человеческого ревью
+- Гипотезы могут конкурировать, но Core — неприкосновенен
+
+---
+
+## 5. API Спецификация (v5.0)
+
+### Endpoint: `/solve`
+
+**Request:**
+```http
+POST /api/v5/solve
+Content-Type: application/json
+X-Client-ID: <uuid>
+
+{
+  "query": "С какой силой Земля притягивает яблоко массой 100г?",
+  "context": {
+    "domain_hint": "classical_mechanics",
+    "precision": "standard"  # standard | high | symbolic
+  },
+  "required_proof_level": "P1",
+  "output_formats": ["json", "eli5", "academic", "mermaid"]
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "request_id": "req_abc123",
+  "timestamp": "2026-05-26T14:23:11Z",
+  
+  "model_lattice": {
+    "selected": "classical_gravitation",
+    "probability": 0.94,
+    "alternatives": [
+      {"model": "general_relativity", "probability": 0.06}
+    ],
+    "ambiguity_temperature": 0.12
+  },
+  
+  "solution": {
+    "value": 0.981,
+    "unit": "N",
+    "symbolic": "m * g",
+    "numeric_steps": [
+      {"step": 1, "expression": "F = G * M * m / r^2"},
+      {"step": 2, "expression": "F = 6.674e-11 * 5.972e24 * 0.1 / (6.371e6)^2"},
+      {"step": 3, "expression": "F ≈ 0.981 N"}
+    ]
+  },
+  
+  "proof": {
+    "level": "P1",
+    "tinfo": 0.08,
+    "z3_verification": "SUCCESS",
+    "invariants_checked": [
+      {"name": "energy_conservation", "status": "OK"},
+      {"name": "v << c", "status": "OK"}
+    ]
+  },
+  
+  "expression": {
+    "eli5": "Земля тянет яблоко к себе с силой примерно как вес 100-граммовой пачки масла.",
+    "academic": "Гравитационное взаимодействие между Землёй и яблоком массой 0.1 кг составляет приблизительно 0.981 Н в соответствии с законом всемирного тяготения Ньютона.",
+    "business": "Рассчитанная гравитационная сила: 0.981 Н (уровень достоверности 92%)."
+  },
+  
+  "visualizations": {
+    "mermaid": "graph TD\n  A[Земля] -->|F = 0.981 Н| B[Яблоко]\n  B -->|вторая сила| A",
+    "ast_hash": "a7f3c8e9d1b2..."
+  }
+}
+```
+
+### Endpoint: `/clarify` (вызывается при T_ambig ≥ 0.6)
+
+**Response:**
+```json
+{
+  "status": "clarification_needed",
+  "ambiguity_temperature": 0.71,
+  "candidates": [
+    {
+      "model": "fruit_price",
+      "probability": 0.42,
+      "question": "Вас интересует цена яблок в магазине?"
+    },
+    {
+      "model": "stock_price",
+      "probability": 0.38,
+      "question": "Вы имели в виду акции Apple Inc. (AAPL)?"
+    }
+  ]
+}
+```
+
+---
+
+## 6. Уязвимости и митигации (Security Model)
+
+| Уязвимость | Уровень | Митигация |
+|---|---|---|
+| Prompt Injection в LLM-парсере | L0 | Строгая Pydantic-схема, sandbox, запрет на INVARIANT/CONTEXT |
+| Semantic Mismatch (Energy + Torque) | L1.5 | Affine Types с двухуровневой проверкой |
+| Контекстная неоднозначность | L2 | Model Lattice с T_ambig threshold |
+| ODE Drift (нарушение v<c в процессе) | L5 | Continuous Invariant Monitor |
+| Z3 combinatorial explosion | L5 | Budget timeout (100ms default), fallback на P2 |
+| ELI5 hallucinations | L6-L7 | Semantic Narrative Graph + constrained decoding |
+| CRISPR-атака на аксиомы | L4 | Core Truth Layer frozen, только Hypothesis Layer mutable |
+| Graph isomorphism DDoS | L3 | Canonical Hash вместо полного изоморфизма |
+| Cache poisoning | L3 | Подписи хэшей, TTL, инвалидация при обновлении Core |
+
+---
+
+## 7. Доменные плагины (Extensibility)
+
+**Базовые плагины MVP:**
+
+1. `classical_mechanics` — ньютоновская механика
+2. `electromagnetism` — уравнения Максвелла
+3. `thermodynamics` — законы термодинамики
+4. `fluid_mechanics` — гидродинамика (Reynolds, Mach)
+5. `quantum_mechanics` — уравнение Шрёдингера (базовое)
+
+**Плагины второй волны:**
+
+6. `special_relativity` — СТО
+7. `general_relativity` — ОТО (тензорный анализ)
+8. `economics` — макроэкономика (IS-LM, инфляция)
+9. `epidemiology` — SIR-модели
+10. `computer_science` — анализ алгоритмов (O-символика)
+
+**API для разработчиков плагинов:**
+
+```python
+# plugin.py
+class MyPlugin(DomainPlugin):
+    domain = "my_domain"
+    version = "1.0.0"
+    
+    @hookimpl
+    def register_dimensions(self):
+        return ["CUSTOM_DIM_1", "CUSTOM_DIM_2"]
+    
+    @hookimpl
+    def register_affine_types(self):
+        return [
+            AffineType([1,2,-2,0,0,0,0], "MySpecialEnergy", 0),
+            # ...
+        ]
+    
+    @hookimpl
+    def register_invariants(self):
+        return [
+            Invariant("custom_conservation", critical=True)
+        ]
+```
+
+---
+
+## 8. Roadmap
+
+### Sprint 1 (4 недели) — Foundation
+- [ ] Реализация L0-L1.5 (MEMBRANE, STS, Dimensions, Affine Types)
+- [ ] Базовый RIBOSOME с Canonical Hash
+- [ ] LRU-кэш AST
+- [ ] Unit-тесты для Affine Types (коллизии Energy/Torque)
+
+### Sprint 2 (4 недели) — Nucleus
+- [ ] NUCLEUS с SymPy для алгебры
+- [ ] Интеграция Z3 для верификации
+- [ ] Continuous Invariant Monitor для простых ОДУ
+- [ ] Proof Levels P0-P4
+
+### Sprint 3 (4 недели) — Intelligence
+- [ ] Model Lattice (L2)
+- [ ] Domain Plugins: classical_mechanics, electromagnetism
+- [ ] Semantic Narrative Graph
+- [ ] Constrained LLM styling
+
+### Sprint 4 (4 недели) — Production
+- [ ] Production API (FastAPI)
+- [ ] OpenAPI-документация
+- [ ] Observability (OpenTelemetry)
+- [ ] Security audit
+- [ ] Публичный бета-релиз
+
+### Sprint 5+ (roadmap) — Expansion
+- [ ] Больше доменных плагинов
+- [ ] Поддержка тензорного анализа (ОТО)
+- [ ] Изоморфный поиск графов (опционально)
+- [ ] Desktop IDE с визуализацией Proof Trace
+
+---
+
+## 9. Критерии успеха (KPIs)
+
+### Технические:
+- **Галлюцинации ядра:** 0% (P0-P2 должны быть математически корректны)
+- **Coverage инвариантов:** ≥ 95% известных физических инвариантов
+- **Среднее время ответа:** < 2 секунды для задач P2
+- **Cache hit rate:** > 30% для типовых задач
+
+### Пользовательские:
+- **Точность ELI5:** > 90% в double-blind тестах с экспертами
+- **Ambiguity handling:** < 5% отказов при нормальной формулировке
+- **Tinfo calibration:** корреляция с экспертной оценкой > 0.8
+
+---
+
+## 10. Заключение
+
+**DBSE v5.0 «Chromosome»** — это не очередной AI-обёрточный проект, а архитектурно выверенная **операционная система для знаний**, где:
+
+- **Ядро детерминировано и священно**
+- **Гипотезы изолированы и верифицируемы**
+- **Контекст представлен как распределение вероятностей**
+- **Смысл проверяется до вычисления, а не после**
+- **LLM занимает своё законное место — периферия**
+
+Проект готов к реализации MVP. Следующий шаг — формирование команды (2 senior Python-разработчика, 1 ML-инженер, 1 физик-консультант) и начало Sprint 1.
