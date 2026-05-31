@@ -53,6 +53,13 @@ L7  EXPRESSION      (constrained LLM styling)
   и каркас `fluid_mechanics` (Re/Ma/Fr → model). Слой `L4.CYTOPLASM`
   читает `config.domain_hint`, пишет `constraints`/`invariants`/`domain_model`
   для NUCLEUS (Этап 7). Плагины подключаются/отключаются без изменения ядра.
+- Этап 6 — L5 NUCLEUS (часть 1): ✅ алгебраический SymPy-решатель (`F = m * g`),
+  `Proof`/`ProofLevel`, `compute_tinfo`, `numeric_steps` (`dbse/nucleus/`).
+  Слой `L5.NUCLEUS` подключён: cache miss → solve + cache store.
+  **QA:** уровни 1 + 3 (differential) + 4 (metamorphic).
+- Этап 7 — L5 NUCLEUS (часть 2): ✅ ОДУ первого порядка (SciPy + SymPy oracle),
+  Continuous Invariant Monitor (`v<c` → P3 MODEL_BREAKDOWN), Z3 с бюджетом 100 мс
+  (fallback P2). **Закрывает уязвимости №3 (ODE Drift) и №5 (Z3 explosion).**
 
 ## Разработка
 

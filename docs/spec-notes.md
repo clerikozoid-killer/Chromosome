@@ -98,6 +98,33 @@
 - **QA-гейт:** уровни 1 (юнит + layer) + 4 (`test_metamorphic.py` — стабильность
   model selection при смене единиц индикаторов).
 
+## L5 (Stage 6) — принятые решения
+- **SymPy — первая научная runtime-зависимость.** Z3, ODE, Continuous Invariant
+  Monitor — Этап 7.
+- **MVP algebraic = recipe dispatch.** Первый рецепт: `target.force` + `mass` →
+  `F = m * g` (`dbse/nucleus/recipes/weight.py`). SymPy для символики и подстановки.
+- **ODE (`LinearODE_Order1`) — pass-through** с trace `skipped:ode-deferred-stage7`.
+- **P0/P1 недостижимы без Z3.** `required_proof_level` P0/P1 → tag
+  `domain_switch:z3-deferred-stage7` в `solver_path`, повышение `tinfo`.
+- **`compute_tinfo`** в `dbse/nucleus/tinfo.py` — веса по префиксам `solver_path`
+  (spec §3). Чистый алгебраический solve → `P2`, `tinfo < 0.2`.
+- **Cache write on miss** — NUCLEUS кладёт результат в `SemanticCache` по
+  `canonical_hash` (согласовано с RIBOSOME Stage 4).
+- **Инварианты Cytoplasm** пока только в trace (`invariants_pending`); runtime
+  monitor — Этап 7.
+- **Конвертация массы** `g` → `kg` в `membrane_quantities_si` (тех-долг L1
+  кириллических единиц не затрагиваем).
+- **QA-гейт:** уровни 1 (юнит + layer), 3 (`test_differential.py`), 4
+  (`test_metamorphic.py`).
+
+## L5 (Stage 7) — принятые решения
+- **ОДУ MVP:** только `LinearODE_Order1`; SciPy `solve_ivp` + event при нарушении CRITICAL.
+- **Monitor:** `ContinuousInvariantMonitor.check_invariants(t, state)` на каждом шаге.
+- **P3:** `HaltReason.MODEL_BREAKDOWN` + suggestion про релятивистскую модель.
+- **Z3:** `z3-solver`, budget default 100 ms; timeout → `domain_switch:z3-timeout`, P2.
+- **SciPy** — runtime dependency (не только dev).
+- **QA:** уровни 1 + 3 (ODE differential) + 4 (k→0) + 5 (adversarial v>c).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).

@@ -23,13 +23,17 @@ def _ode_ast(g: float, k: float) -> AST:
                     ASTNode(
                         kind="OPERATOR",
                         op="MUL",
-                        children=(ASTNode(kind="CONST", value=-k), ASTNode(kind="SYMBOL", value="v")),
+                        children=(
+                            ASTNode(kind="CONST", value=-k),
+                            ASTNode(kind="SYMBOL", value="v"),
+                        ),
                     ),
                 ),
             ),
         ),
     )
-    return AST(root=ASTNode(kind="OBJECT", op="obj_1", children=(eq,)), structure_class="LinearODE_Order1")
+    root = ASTNode(kind="OBJECT", op="obj_1", children=(eq,))
+    return AST(root=root, structure_class="LinearODE_Order1")
 
 
 def test_k_to_zero_approaches_free_fall() -> None:

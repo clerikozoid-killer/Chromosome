@@ -24,7 +24,8 @@ def test_scipy_matches_sympy_exponential_decay() -> None:
             ),
         ),
     )
-    ast = AST(root=ASTNode(kind="OBJECT", op="o", children=(eq,)), structure_class="LinearODE_Order1")
+    root = ASTNode(kind="OBJECT", op="o", children=(eq,))
+    ast = AST(root=root, structure_class="LinearODE_Order1")
     numeric = solve_linear_ode_1(ast, t_end=t_end, v0=1.0).at(t_end)
     t = sp.Symbol("t")
     v = sp.Function("v")
