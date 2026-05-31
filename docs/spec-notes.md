@@ -62,6 +62,24 @@
   детерминированный стенд `tests/membrane/test_parse_accuracy.py` + корпус
   `cases/parse/membrane_parse.jsonl`; реальный LLM-eval — мягкий гейт, позже).
 
+## L3 (Stage 4) — принятые решения
+- **MEMBRANE расширена полем `equations: list[LinearOde1]`** — LLM по-прежнему
+  не генерирует `OPERATOR`; только структурированные коэффициенты
+  `d(state)/dt = constant + linear_coeff * state`. RIBOSOME строит дерево
+  `DERIV`/`EQ`/`ADD`/`MUL` детерминированно.
+- **L1/L1.5 интеграция в `compile`, не в layer stubs.** `quantity_affine()`
+  вызывает L1 `parse_unit` + L1.5 `affine()`. Слои `L1.DIMENSIONS` /
+  `L1.5.AFFINE_TYPES` остаются pass-through.
+- **MVP hash — структурный, не полный изоморфизм.** Переименование переменных и
+  перестановка коммутативных операндов не меняют хеш; разные коэффициенты —
+  меняют. `classify_structure` для DoD: `LinearODE_Order1` покрывает и
+  `dv/dt=g-kv`, и RC `dV/dt=-V/RC`.
+- **Кэш:** HMAC-SHA256 подпись записи, TTL, LRU, инвалидация по `core_version`
+  (хук для Этапа 11). Отравленная запись → `get()` возвращает `None` и удаляет
+  ключ.
+- **QA-гейт:** уровни 1 (юнит), 2 (`test_properties.py`), 5
+  (`test_adversarial.py` cache poisoning).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).

@@ -41,6 +41,12 @@ L7  EXPRESSION      (constrained LLM styling)
   `ParserAdapter`; rule-based классификатор запросов (`dbse/sts/`). Слои
   `L0.MEMBRANE`/`L0.5.STS_TYPING` подключены: схема-violation → `CLARIFICATION`,
   `OPINION` → `UNHANDLED`. **Закрывает уязвимость №2 (Prompt Injection).**
+- Этап 4 — L3 RIBOSOME: ✅ компиляция MEMBRANE → AST с навешиванием
+  `AffineType` (L1/L1.5 в `compile`), нормализация (rename/sort/fold),
+  `classify_structure`, `canonical_hash` (16 hex), подписанный LRU-кэш
+  (`dbse/ribosome/`). Слой `L3.RIBOSOME` подключён: cache hit →
+  `ctx.solution` без NUCLEUS. **Закрывает уязвимости №8 (Graph isomorphism
+  DDoS) и №9 (Cache poisoning).**
 
 ## Разработка
 
