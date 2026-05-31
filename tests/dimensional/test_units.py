@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from dbse.contracts.dimensions import Dimension
+from dbse.contracts.dimensions import DIMENSIONLESS, Dimension
 from dbse.dimensional import DimensionError, resolve
 
 # (symbol, expected dimension) — magnitude is irrelevant at L1.
@@ -34,6 +34,20 @@ RESOLVE_TABLE: list[tuple[str, Dimension]] = [
     ("MHz", Dimension.of(0, 0, -1)),
     ("kPa", Dimension.of(1, -1, -2)),
     ("µm", Dimension.of(0, 1)),
+    ("1", DIMENSIONLESS),
+    ("rad", DIMENSIONLESS),
+    ("sr", DIMENSIONLESS),
+    ("min", Dimension.of(0, 0, 1)),
+    ("h", Dimension.of(0, 0, 1)),
+    ("day", Dimension.of(0, 0, 1)),
+    ("L", Dimension.of(0, 3)),
+    ("bar", Dimension.of(1, -1, -2)),
+    ("eV", Dimension.of(1, 2, -2)),
+    ("cal", Dimension.of(1, 2, -2)),
+    ("F", Dimension.of(-1, -2, 4, 2)),
+    ("S", Dimension.of(-1, -2, 3, 2)),
+    ("Wb", Dimension.of(1, 2, -2, -1)),
+    ("H", Dimension.of(1, 2, -2, -2)),
 ]
 
 
@@ -51,3 +65,10 @@ def test_registry_has_at_least_30_named_units() -> None:
     from dbse.dimensional.units import _UNITS
 
     assert len(_UNITS) >= 30
+
+
+def test_resolve_table_covers_every_registered_unit() -> None:
+    from dbse.dimensional.units import _UNITS
+
+    covered = {symbol for symbol, _ in RESOLVE_TABLE}
+    assert set(_UNITS) <= covered, f"Units missing from RESOLVE_TABLE: {set(_UNITS) - covered}"

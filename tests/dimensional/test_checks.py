@@ -6,6 +6,7 @@ import pytest
 
 from dbse.contracts.dimensions import DIMENSIONLESS, Dimension
 from dbse.dimensional import (
+    TRANSCENDENTAL,
     DimensionError,
     check_add,
     check_subtract,
@@ -45,3 +46,11 @@ def test_transcendental_requires_dimensionless_argument() -> None:
 
 def test_transcendental_accepts_dimensionless_argument() -> None:
     assert check_transcendental("exp", DIMENSIONLESS) == DIMENSIONLESS
+
+
+def test_check_subtract_allows_equal_dimensions() -> None:
+    assert check_subtract(_J, _J) == _J
+
+
+def test_transcendental_set_contains_common_functions() -> None:
+    assert {"sin", "cos", "exp", "log"} <= TRANSCENDENTAL
