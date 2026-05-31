@@ -7,7 +7,15 @@ import pytest
 from dbse.contracts.affine import AffineType
 from dbse.contracts.dimensions import Dimension
 from dbse.dimensional import DimensionError
-from dbse.semantic import Operator, SemanticTypeError, affine, check_compatible, compatible
+from dbse.semantic import (
+    Operator,
+    SemanticTypeError,
+    affine,
+    check_compatible,
+    combine,
+    compatible,
+    is_ambiguous,
+)
 
 
 def test_semantic_type_error_is_a_type_error() -> None:
@@ -105,3 +113,59 @@ def test_cross_rejects_non_polar_vectors() -> None:
     with pytest.raises(SemanticTypeError) as excinfo:
         check_compatible(affine("Velocity"), affine("Velocity"), Operator.CROSS)
     assert "CROSS" in str(excinfo.value)
+
+
+def test_multiply_unambiguous_tag_force_times_velocity_is_power() -> None:
+    result = combine(affine("Force"), affine("Velocity"), Operator.MULTIPLY)
+    assert result.dimension == Dimension.of(1, 2, -3)   # power dimension
+    assert result.semantic_tag == "Power"
+    assert not is_ambiguous(result.semantic_tag)
+
+
+def test_multiply_force_times_length_is_ambiguous_work_or_torque() -> None:
+    result = combine(affine("Force"), affine("Length"), Operator.MULTIPLY)
+    assert result.dimension == Dimension.of(1, 2, -2)
+    assert is_ambiguous(result.semantic_tag)
+    assert set(result.semantic_tag.split("|")) == {"Torque", "Work"}
+
+
+def test_multiply_is_commutative_for_dimension_and_tag() -> None:
+    ab = combine(affine("Force"), affine("Length"), Operator.MULTIPLY)
+    ba = combine(affine("Length"), affine("Force"), Operator.MULTIPLY)
+    assert ab.dimension == ba.dimension
+    assert ab.semantic_tag == ba.semantic_tag
+
+
+def test_multiply_or_divide_is_always_compatible() -> None:
+    # Per the v5.0 spec, x/div never fail the semantic gate.
+    assert compatible(affine("Energy"), affine("Torque"), Operator.MULTIPLY)
+    assert compatible(affine("Energy"), affine("Torque"), Operator.DIVIDE)
+
+
+def test_divide_energy_by_time_is_power() -> None:
+    result = combine(affine("Energy"), affine("Time"), Operator.DIVIDE)
+    assert result.dimension == Dimension.of(1, 2, -3)
+    assert result.semantic_tag == "Power"
+
+
+def test_divide_is_not_commutative_for_tag() -> None:
+    # The ordered key matters: Energy/Time is Power, but Time/Energy is unknown.
+    assert combine(affine("Energy"), affine("Time"), Operator.DIVIDE).semantic_tag == "Power"
+    assert combine(affine("Time"), affine("Energy"), Operator.DIVIDE).semantic_tag == "Unknown"
+
+
+def test_combine_resolved_tag_takes_its_registry_rank() -> None:
+    # Force(r1) x Velocity(r1) -> Power, a scalar (rank 0 from the registry).
+    power = combine(affine("Force"), affine("Velocity"), Operator.MULTIPLY)
+    assert power.semantic_tag == "Power"
+    assert power.tensor_rank == 0
+    # Mass(r0) x Velocity(r1) -> Momentum, a rank-1 vector (from the registry).
+    momentum = combine(affine("Mass"), affine("Velocity"), Operator.MULTIPLY)
+    assert momentum.semantic_tag == "Momentum"
+    assert momentum.tensor_rank == 1
+
+
+def test_unknown_product_yields_unknown_tag() -> None:
+    result = combine(affine("Heat"), affine("Length"), Operator.MULTIPLY)
+    assert result.semantic_tag == "Unknown"
+    assert result.dimension == Dimension.of(1, 3, -2)

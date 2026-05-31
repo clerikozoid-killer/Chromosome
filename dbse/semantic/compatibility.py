@@ -5,8 +5,9 @@ The L1 functions ``check_add`` / ``check_subtract`` remain the single source of
 *semantic* layer (tag + tensor rank, plus whitelisted fusions) on top. It never
 re-implements ``a.dimension == b.dimension``.
 
-``ADD``/``SUBTRACT``, ``DOT`` and ``CROSS`` are handled here; ``MULTIPLY``/``DIVIDE``
-(Task 5) are added in a later task.
+All six operators are handled: ``ADD``/``SUBTRACT`` and ``DOT``/``CROSS`` go through
+the strict gates; ``MULTIPLY``/``DIVIDE`` are always legal and resolved by
+:func:`combine`.
 """
 
 from __future__ import annotations
@@ -15,12 +16,19 @@ from dbse.contracts.affine import AffineType
 from dbse.dimensional import DimensionError, check_add, check_subtract
 from dbse.semantic.errors import SemanticTypeError
 from dbse.semantic.operators import Operator
-from dbse.semantic.tags import _TAGS, ADDITIVE_FUSIONS
+from dbse.semantic.tags import (
+    _TAGS,
+    ADDITIVE_FUSIONS,
+    DIVISIVE_FUSIONS,
+    MULTIPLICATIVE_FUSIONS,
+    ambiguous_tag,
+)
 
 # Structural (non-registry) tags used by tensor operators.
 _SCALAR = "Scalar"
 _POLAR_VECTOR = "PolarVector"
 _AXIAL_VECTOR = "AxialVector"
+_UNKNOWN = "Unknown"  # result tag when no fusion rule applies
 
 
 def compatible(a: AffineType, b: AffineType, op: Operator) -> bool:
@@ -37,7 +45,8 @@ def check_compatible(a: AffineType, b: AffineType, op: Operator) -> AffineType:
 
     Raises :class:`~dbse.dimensional.DimensionError` if the *dimensions* are
     incompatible (the L1 gate), or :class:`SemanticTypeError` if the dimensions
-    match but the *semantics* do not (the L1.5 gate).
+    match but the *semantics* do not (the L1.5 gate). For ``MULTIPLY``/``DIVIDE``
+    the result is always defined (see :func:`combine`).
     """
     if op in (Operator.ADD, Operator.SUBTRACT):
         return _check_additive(a, b, op)
@@ -45,7 +54,51 @@ def check_compatible(a: AffineType, b: AffineType, op: Operator) -> AffineType:
         return _check_dot(a, b)
     if op is Operator.CROSS:
         return _check_cross(a, b)
-    raise SemanticTypeError(f"Unsupported operator: {op!r}")
+    if op in (Operator.MULTIPLY, Operator.DIVIDE):
+        return combine(a, b, op)
+    raise SemanticTypeError(f"Unsupported operator: {op!r}")  # pragma: no cover
+
+
+def combine(a: AffineType, b: AffineType, op: Operator) -> AffineType:
+    """Result type of ``a * b`` or ``a / b``.
+
+    ``MULTIPLY``/``DIVIDE`` are always dimensionally and semantically legal; this
+    computes the resulting dimension and a best-effort semantic tag. An ambiguous
+    product (e.g. ``Force * Length`` -> ``Work`` *or* ``Torque``) yields a
+    pipe-joined tag flagged for L2 to resolve; an unknown combination yields
+    ``"Unknown"``.
+    """
+    if op is Operator.MULTIPLY:
+        dimension = a.dimension * b.dimension
+        candidates = MULTIPLICATIVE_FUSIONS.get(
+            frozenset({a.semantic_tag, b.semantic_tag}), ()
+        )
+    elif op is Operator.DIVIDE:
+        dimension = a.dimension / b.dimension
+        divided = DIVISIVE_FUSIONS.get((a.semantic_tag, b.semantic_tag))
+        candidates = (divided,) if divided is not None else ()
+    else:  # pragma: no cover - guarded by check_compatible dispatch
+        raise SemanticTypeError(f"combine() does not handle {op!r}")
+
+    if len(candidates) == 1:
+        tag = candidates[0]
+    elif len(candidates) > 1:
+        tag = ambiguous_tag(*candidates)
+    else:
+        tag = _UNKNOWN
+
+    # A resolved, unambiguous tag carries its registry rank; otherwise fall back
+    # to an operand heuristic (vector*vector collapses to a scalar, mirroring
+    # DOT — an outer product is out of scope for L1.5 best-effort).
+    spec = _TAGS.get(tag)
+    if spec is not None:
+        rank = spec.tensor_rank
+    else:
+        rank = 0 if a.tensor_rank and b.tensor_rank else a.tensor_rank + b.tensor_rank
+
+    # The product/quotient frame is intentionally dropped (operand frames may
+    # differ); the additive path, by contrast, preserves the left frame.
+    return AffineType(dimension, tag, rank)
 
 
 def _check_additive(a: AffineType, b: AffineType, op: Operator) -> AffineType:
