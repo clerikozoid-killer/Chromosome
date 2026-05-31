@@ -16,9 +16,13 @@ def normalize_ast(node: ASTNode) -> ASTNode:
 
 def to_canonical(node: ASTNode) -> str:
     """Stable string form for hashing."""
-    if node.kind in {"SYMBOL", "CONST", "QUANTITY", "OBJECT"}:
+    if node.kind in {"SYMBOL", "CONST", "QUANTITY"}:
         val = node.value if node.value is not None else ""
         return f"({node.kind}:{node.op}:{val})"
+    if node.kind == "OBJECT":
+        val = node.value if node.value is not None else ""
+        inner = ",".join(to_canonical(c) for c in node.children)
+        return f"({node.kind}:{node.op}:{val}[{inner}])"
     if node.kind == "OPERATOR":
         inner = ",".join(to_canonical(c) for c in node.children)
         return f"({node.op}[{inner}])"
