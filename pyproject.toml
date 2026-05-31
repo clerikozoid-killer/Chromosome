@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "Chromosome Team" }]
-dependencies = []
+dependencies = ["pydantic>=2,<3"]
 
 [project.optional-dependencies]
 dev = [
@@ -40,3 +40,9 @@ python_version = "3.11"
 strict = true
 warn_unused_configs = true
 files = ["dbse", "tests"]
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
