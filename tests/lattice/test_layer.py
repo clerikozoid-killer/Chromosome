@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dbse.contracts.context import HaltReason
-from dbse.layers.model_lattice import ModelLattice
 from dbse.pipeline import Pipeline
 
 

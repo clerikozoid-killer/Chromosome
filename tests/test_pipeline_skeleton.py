@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dbse.contracts.context import HaltReason, PipelineContext
+from dbse.contracts.context import HaltReason, PipelineContext, TraceEntry
 from dbse.layers.base import Layer, PassThroughLayer
 from dbse.pipeline import Pipeline, default_layers
 
@@ -30,7 +30,7 @@ def test_all_default_layers_satisfy_protocol() -> None:
         assert isinstance(layer, Layer)
 
 
-def _first_layer_occurrence_order(trace: list) -> list[str]:
+def _first_layer_occurrence_order(trace: list[TraceEntry]) -> list[str]:
     seen: list[str] = []
     for entry in trace:
         if entry.layer not in seen:

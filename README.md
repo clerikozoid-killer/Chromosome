@@ -60,6 +60,9 @@ L7  EXPRESSION      (constrained LLM styling)
 - Этап 7 — L5 NUCLEUS (часть 2): ✅ ОДУ первого порядка (SciPy + SymPy oracle),
   Continuous Invariant Monitor (`v<c` → P3 MODEL_BREAKDOWN), Z3 с бюджетом 100 мс
   (fallback P2). **Закрывает уязвимости №3 (ODE Drift) и №5 (Z3 explosion).**
+- Этап 8 — L2 MODEL LATTICE: ✅ rule-based `P(Model|Context)`, `T_ambig = H/log(N)`,
+  пороги `<0.3` / `0.3–0.6` / `≥0.6` → `AMBIGUITY_HALT` (`dbse/lattice/`).
+  **Закрывает уязвимость контекстной неоднозначности.** **QA:** уровни 1 + 5.
 
 ## Разработка
 

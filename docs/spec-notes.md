@@ -125,6 +125,15 @@
 - **SciPy** — runtime dependency (не только dev).
 - **QA:** уровни 1 + 3 (ODE differential) + 4 (k→0) + 5 (adversarial v>c).
 
+## L2 (Stage 8) — принятые решения
+- **Rule-based lattice:** keyword likelihood × prior → posterior; без LLM.
+- **T_ambig:** Shannon entropy / log(N); `<0.3` continue, `0.3–0.6` top-2 в trace,
+  `≥0.6` → `HaltReason.AMBIGUITY_HALT` + candidates в `ctx.model_lattice`.
+- **PHYSICS_COMPUTE + domain_hint** подавляет fruit/stock/company, доминирует
+  `classical_gravitation`.
+- **Слой L2** после L1.5 в `default_layers()` (как в skeleton Stage 0).
+- **QA-гейт:** уровни 1 (entropy/classify/layer) + 5 (`test_adversarial.py`).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).
