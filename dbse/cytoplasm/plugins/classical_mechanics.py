@@ -30,7 +30,7 @@ class ClassicalMechanicsPlugin:
 
     def select_model(self, indicators: dict[str, float]) -> DomainModel:
         drag = indicators.get("drag_regime", 0.0)
-        if drag >= 1.0:
+        if drag > 1.0:
             return DomainModel(id="quadratic_friction", label="Quadratic drag (F ∝ v|v|)")
         return DomainModel(id="linear_friction", label="Linear drag (F = -k v)")
 
