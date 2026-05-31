@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from dbse.membrane import DeterministicParser, validate_membrane
 
 
-def _parse(query: str) -> dict:
+def _parse(query: str) -> dict[str, Any]:
     return DeterministicParser().parse(query)
 
 

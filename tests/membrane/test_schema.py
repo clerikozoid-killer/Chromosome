@@ -6,7 +6,12 @@ from typing import Any
 
 import pytest
 
-from dbse.membrane import MembraneError
+from dbse.membrane import (
+    MembraneError,
+    MembraneOutput,
+    QuestionType,
+    validate_membrane,
+)
 
 
 def test_membrane_error_is_a_value_error() -> None:
@@ -14,12 +19,6 @@ def test_membrane_error_is_a_value_error() -> None:
     with pytest.raises(MembraneError):
         raise MembraneError("boom")
 
-
-from dbse.membrane import (
-    MembraneOutput,
-    QuestionType,
-    validate_membrane,
-)
 
 _VALID: dict[str, Any] = {
     "objects": [
