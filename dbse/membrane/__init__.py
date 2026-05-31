@@ -3,6 +3,7 @@
 from dbse.membrane.adapter import DeterministicParser, ParserAdapter
 from dbse.membrane.errors import MembraneError
 from dbse.membrane.schema import (
+    LinearOde1,
     MembraneOutput,
     ObjectNode,
     QuantityNode,
@@ -14,6 +15,7 @@ from dbse.membrane.schema import (
 
 __all__ = [
     "DeterministicParser",
+    "LinearOde1",
     "MembraneError",
     "MembraneOutput",
     "ObjectNode",

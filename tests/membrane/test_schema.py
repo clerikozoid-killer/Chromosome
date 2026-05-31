@@ -110,3 +110,32 @@ def test_relation_unit_may_be_omitted_but_must_resolve_when_present() -> None:
     ]
     with pytest.raises(MembraneError):
         validate_membrane(bad)
+
+
+def test_linear_ode_1_equation_accepts_valid_coefficients() -> None:
+    payload = {
+        **_VALID,
+        "equations": [
+            {
+                "object_ref": "obj_1",
+                "state": "v",
+                "constant": 9.81,
+                "linear_coeff": -0.5,
+            }
+        ],
+    }
+    out = validate_membrane(payload)
+    assert len(out.equations) == 1
+    assert out.equations[0].state == "v"
+    assert out.equations[0].constant == 9.81
+
+
+def test_linear_ode_1_rejects_dangling_object_ref() -> None:
+    bad = {
+        **_VALID,
+        "equations": [
+            {"object_ref": "missing", "state": "v", "constant": 0.0, "linear_coeff": -1.0}
+        ],
+    }
+    with pytest.raises(MembraneError):
+        validate_membrane(bad)

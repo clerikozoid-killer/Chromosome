@@ -84,6 +84,17 @@ class RelationNode(BaseModel):
     _check_unit = field_validator("unit")(_validate_unit)
 
 
+class LinearOde1(BaseModel):
+    """First-order linear ODE: d(state)/dt = constant + linear_coeff * state."""
+
+    model_config = _STRICT
+
+    object_ref: str
+    state: str
+    constant: float = 0.0
+    linear_coeff: float = 0.0
+
+
 class Target(BaseModel):
     """What the query asks to compute/prove/explain."""
 
@@ -101,6 +112,7 @@ class MembraneOutput(BaseModel):
     objects: list[ObjectNode] = Field(default_factory=list)
     quantities: list[QuantityNode] = Field(default_factory=list)
     relations: list[RelationNode] = Field(default_factory=list)
+    equations: list[LinearOde1] = Field(default_factory=list)
     question_type: QuestionType
     target: Target
 
@@ -113,6 +125,9 @@ class MembraneOutput(BaseModel):
                 dangling.append(q.ref)
         for r in self.relations:
             dangling += [ref for ref in (r.from_, r.to) if ref not in known]
+        for eq in self.equations:
+            if eq.object_ref not in known:
+                dangling.append(eq.object_ref)
         if self.target.ref not in known:
             dangling.append(self.target.ref)
         if dangling:
