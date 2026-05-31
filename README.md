@@ -47,6 +47,12 @@ L7  EXPRESSION      (constrained LLM styling)
   (`dbse/ribosome/`). Слой `L3.RIBOSOME` подключён: cache hit →
   `ctx.solution` без NUCLEUS. **Закрывает уязвимости №8 (Graph isomorphism
   DDoS) и №9 (Cache poisoning).**
+- Этап 5 — L4 CYTOPLASM: ✅ Domain Plugin API (`DomainPlugin` Protocol),
+  stdlib `PluginRegistry` (pluggy-стиль без зависимости), плагины
+  `classical_mechanics` (инварианты `v<c`, выбор linear/quadratic friction)
+  и каркас `fluid_mechanics` (Re/Ma/Fr → model). Слой `L4.CYTOPLASM`
+  читает `config.domain_hint`, пишет `constraints`/`invariants`/`domain_model`
+  для NUCLEUS (Этап 7). Плагины подключаются/отключаются без изменения ядра.
 
 ## Разработка
 

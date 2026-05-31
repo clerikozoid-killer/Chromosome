@@ -80,6 +80,24 @@
 - **QA-гейт:** уровни 1 (юнит), 2 (`test_properties.py`), 5
   (`test_adversarial.py` cache poisoning).
 
+## L4 (Stage 5) — принятые решения
+- **`DomainPlugin` Protocol** в `dbse/cytoplasm/plugin.py`: шесть хуков
+  (`compute_indicators`, `select_model`, `inject_constraints`,
+  `register_affine_types`, `register_invariants`) + `dimensionless_numbers`.
+- **Registry без pluggy** — `PluginRegistry` с явным порядком регистрации и
+  per-plugin error isolation (`CytoplasmError` → trace, не crash пайплайна).
+- **Domain hint только из `ctx.config`** (API `context.domain_hint`), не из
+  MEMBRANE — сохраняем sandbox Stage 3 (LLM не эмитит `CONTEXT`).
+- **Инварианты — data-only** на этом этапе; Continuous Invariant Monitor
+  (SymPy/Z3) — Этап 7. `classical_mechanics` инъецирует `v_lt_c` (CRITICAL) и
+  `energy_conserved` (SOFT).
+- **Friction selection:** `drag_regime = |v|/v_ref` (default `v_ref=1 m/s`);
+  `≤1` → `linear_friction`, `>1` → `quadratic_friction`.
+- **`fluid_mechanics`** — reference skeleton по спеке (Re>2300 turbulent,
+  Ma>0.3 compressible); не блокирует MVP.
+- **QA-гейт:** уровни 1 (юнит + layer) + 4 (`test_metamorphic.py` — стабильность
+  model selection при смене единиц индикаторов).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).
