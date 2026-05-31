@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any
 
 from dbse.contracts.ast import AST
+from dbse.contracts.domain import Constraint, Invariant
 from dbse.contracts.proof import Proof
 
 
@@ -49,6 +50,10 @@ class PipelineContext:
     membrane: dict[str, Any] | None = None       # L0
     sts_type: str | None = None                  # L0.5
     ast: AST | None = None                        # L3
+    constraints: list[Constraint] | None = None       # L4
+    invariants: list[Invariant] | None = None           # L4
+    domain_model: str | None = None                     # L4
+    domain_indicators: dict[str, float] | None = None   # L4
     model_lattice: dict[str, Any] | None = None  # L2
     solution: dict[str, Any] | None = None       # L5
     proof: Proof | None = None                   # L5

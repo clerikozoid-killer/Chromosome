@@ -10,8 +10,10 @@ from hypothesis import strategies as st
 from dbse.contracts import (
     DIMENSIONLESS,
     AffineType,
+    Constraint,
     Dimension,
     HaltReason,
+    Invariant,
     PipelineContext,
     Proof,
     ProofLevel,
@@ -104,3 +106,17 @@ def test_context_halt_sets_structured_reason() -> None:
     assert ctx.halted
     assert ctx.halt_reason is HaltReason.DIMENSION_ERROR
     assert ctx.halt_message == "bad units"
+
+
+def test_pipeline_context_has_l4_cytoplasm_slots() -> None:
+    ctx = PipelineContext(query="q")
+    inv = Invariant(name="v_lt_c", expression="v < c")
+    con = Constraint(expression="F = m*a", constraint_type="newton_2")
+    ctx.invariants = [inv]
+    ctx.constraints = [con]
+    ctx.domain_model = "linear_friction"
+    ctx.domain_indicators = {"beta": 0.001}
+    assert ctx.invariants[0].name == "v_lt_c"
+    assert ctx.constraints[0].constraint_type == "newton_2"
+    assert ctx.domain_model == "linear_friction"
+    assert ctx.domain_indicators["beta"] == 0.001
