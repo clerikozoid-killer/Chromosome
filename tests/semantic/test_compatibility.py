@@ -59,6 +59,14 @@ def test_add_work_and_heat_fuses_to_internal_energy() -> None:
     assert compatible(affine("Work"), affine("Heat"), Operator.ADD)
 
 
+def test_subtract_work_and_heat_does_not_fuse() -> None:
+    # Fusion (Work + Heat -> InternalEnergy) is an additive identity; subtraction
+    # of unlike tags must be rejected, not fused.
+    with pytest.raises(SemanticTypeError):
+        check_compatible(affine("Work"), affine("Heat"), Operator.SUBTRACT)
+    assert not compatible(affine("Work"), affine("Heat"), Operator.SUBTRACT)
+
+
 def test_add_unlike_dimension_raises_dimension_error_not_semantic() -> None:
     # Energy [M L^2 T^-2] + Force [M L T^-2] differ in dimension: the L1 gate
     # must fire first (DimensionError), NOT a SemanticTypeError. This proves
@@ -113,6 +121,13 @@ def test_cross_rejects_non_polar_vectors() -> None:
     with pytest.raises(SemanticTypeError) as excinfo:
         check_compatible(affine("Velocity"), affine("Velocity"), Operator.CROSS)
     assert "CROSS" in str(excinfo.value)
+
+
+def test_cross_rejects_rank_zero_polar_vector() -> None:
+    # A "PolarVector"-tagged scalar must not pass CROSS.
+    scalar_polar = AffineType(Dimension.of(0, 1), "PolarVector", tensor_rank=0)
+    with pytest.raises(SemanticTypeError):
+        check_compatible(scalar_polar, scalar_polar, Operator.CROSS)
 
 
 def test_multiply_unambiguous_tag_force_times_velocity_is_power() -> None:

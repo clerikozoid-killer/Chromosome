@@ -110,10 +110,13 @@ def _check_additive(a: AffineType, b: AffineType, op: Operator) -> AffineType:
     if a.semantic_tag == b.semantic_tag and a.tensor_rank == b.tensor_rank:
         return AffineType(a.dimension, a.semantic_tag, a.tensor_rank, a.frame_of_reference)
 
-    fused = ADDITIVE_FUSIONS.get(frozenset({a.semantic_tag, b.semantic_tag}))
-    if fused is not None and a.tensor_rank == b.tensor_rank:
-        spec = _TAGS[fused]
-        return AffineType(a.dimension, fused, spec.tensor_rank, a.frame_of_reference)
+    # Tag fusion (e.g. Work + Heat -> InternalEnergy) is an *additive* identity, so
+    # it applies to ADD only — Work - Heat must not fuse.
+    if op is Operator.ADD:
+        fused = ADDITIVE_FUSIONS.get(frozenset({a.semantic_tag, b.semantic_tag}))
+        if fused is not None and a.tensor_rank == b.tensor_rank:
+            spec = _TAGS[fused]
+            return AffineType(a.dimension, fused, spec.tensor_rank, a.frame_of_reference)
 
     raise SemanticTypeError(_mismatch_message(a, b, op, _additive_suggestion()))
 
@@ -127,10 +130,11 @@ def _check_dot(a: AffineType, b: AffineType) -> AffineType:
 
 
 def _check_cross(a: AffineType, b: AffineType) -> AffineType:
-    if a.semantic_tag == b.semantic_tag == _POLAR_VECTOR:
+    both_polar = a.semantic_tag == b.semantic_tag == _POLAR_VECTOR
+    if both_polar and a.tensor_rank == 1 and b.tensor_rank == 1:
         return AffineType(a.dimension * b.dimension, _AXIAL_VECTOR, tensor_rank=1)
     raise SemanticTypeError(
-        _mismatch_message(a, b, Operator.CROSS, "CROSS requires two PolarVector operands.")
+        _mismatch_message(a, b, Operator.CROSS, "CROSS requires two rank-1 PolarVector operands.")
     )
 
 
