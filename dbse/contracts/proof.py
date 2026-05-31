@@ -1,7 +1,7 @@
 """Cross-cutting contract: proof levels, violations, Tinfo.
 
 These types travel through the whole pipeline and end up in the API response.
-``compute_tinfo`` heuristics arrive in Stage 6; here we only fix the data shape.
+``compute_tinfo`` is implemented in ``dbse.nucleus.tinfo`` (Stage 6).
 """
 
 from __future__ import annotations
