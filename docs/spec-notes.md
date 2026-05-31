@@ -10,6 +10,29 @@
   напр. в `1/s`); это сделано осознанно, чтобы опечатки вида `m3` (вместо `m^3`) не
   проходили молча. См. `dbse/dimensional/parser.py`.
 
+## L1.5 (Stage 2) — принятые решения
+- `compatible()`/`check_compatible()` для ADD/SUB вызывают L1 `check_add`/
+  `check_subtract` для размерностного гейта и лишь *добавляют* проверку
+  `semantic_tag` + `tensor_rank` — логика не дублируется (см. финальный ревью L1).
+  Следствие: `Energy + Force` → `DimensionError` (L1), `Energy + Torque` →
+  `SemanticTypeError` (L1.5), `Work + Heat` → `InternalEnergy` (whitelist).
+- Неоднозначный результат `×` (напр. `Force × Length`) кодируется прямо в
+  `semantic_tag` как отсортированная строка через `|` (`"Torque|Work"`), т.к.
+  контракт `AffineType` заморожен (`semantic_tag: str`). Разрешает L2 (Этап 8).
+  Хелперы: `ambiguous_tag()`, `is_ambiguous()`. Инвариант «ни один тег реестра не
+  содержит `|`» закреплён тестом.
+- `frame_of_reference` пока НЕ участвует в проверке ADD/SUB (спецификация v5.0
+  `compatible()` для ADD/SUB сверяет только dimension + semantic_tag + tensor_rank).
+  Сложение векторов в разных кадрах — отложено до тензорного/релятивистского этапа
+  (ROADMAP 13+). `combine()` (×/÷) кадр операндов намеренно отбрасывает.
+- `combine()` (×/÷) всегда совместим (по спеку): даёт размерность по алгебре
+  `Dimension` и best-effort тег (правило → тег; несколько кандидатов → ambiguous;
+  нет правила → `"Unknown"`). Ранг разрешённого тега берётся из реестра; для
+  ambiguous/Unknown — операндная эвристика.
+- `Operator` живёт в `dbse/semantic/operators.py` (переиспользуется L3 на Этапе 4).
+- Слой `dbse/layers/affine_types.py` остаётся pass-through до Этапа 3 (как
+  `dbse/layers/dimensional.py` на Этапе 1).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).

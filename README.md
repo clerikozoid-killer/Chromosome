@@ -31,6 +31,10 @@ L7  EXPRESSION      (constrained LLM styling)
 - Этап 0 — фундамент: ✅ каркас, контракты, заглушки, QA-инфра.
 - Этап 1 — L1 (размерностный анализ): ✅ парсинг единиц + правила размерностей
   (`dbse/dimensional/`). Интеграция в слой `L1.DIMENSIONS` — после L0 (Этап 3).
+- Этап 2 — L1.5 (affine types): ✅ семантические теги + правила совместимости
+  (`dbse/semantic/`). `compatible()`/`check_compatible()` навешивают семантику
+  поверх L1-pruning (`check_add`/`check_subtract`). Интеграция в слой
+  `L1.5.AFFINE_TYPES` — после L0 (Этап 3).
 
 ## Разработка
 

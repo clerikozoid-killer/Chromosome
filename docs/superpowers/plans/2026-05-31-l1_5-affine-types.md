@@ -1061,3 +1061,34 @@ Plan complete and saved to `docs/superpowers/plans/2026-05-31-l1_5-affine-types.
 2. **Inline Execution** — execute tasks in this session with checkpoints for review.
 
 Which approach?
+
+---
+
+## Execution Notes (post-hoc — what actually shipped)
+
+Executed Subagent-Driven on `main`. Deviations from the literal task bodies above,
+all decided during review (each task ended green: `ruff`/`mypy`/`pytest`):
+
+- **`check_compatible` dispatch was built incrementally to avoid a forward-reference
+  bug.** As written, Task 3's `check_compatible` routed `MULTIPLY`/`DIVIDE` to
+  `combine`, which does not exist until Task 5 — that would fail `ruff` (F821) and
+  `mypy` at the Task 3/4 commits. Instead: Task 3 handles only `ADD`/`SUBTRACT`
+  (other operators `raise SemanticTypeError("Unsupported operator")`); Task 4 adds
+  `DOT`/`CROSS`; Task 5 adds the `MULTIPLY`/`DIVIDE` branch together with `combine`.
+  Net result after Task 5 is identical to the plan.
+- **Task 2:** added a test pinning the invariant "no registered tag contains the
+  `|` separator", and a test asserting the load-bearing tags exist.
+- **Task 4:** factored the duplicated L1.5 error header into the single
+  `_mismatch_message(a, b, op, suggestion)` builder, and introduced structural-tag
+  constants `_SCALAR`/`_POLAR_VECTOR`/`_AXIAL_VECTOR`.
+- **Task 5:** `"Unknown"` became the `_UNKNOWN` constant; a resolved unambiguous tag
+  takes its registry `tensor_rank` (operand heuristic only for ambiguous/Unknown);
+  added tests for divide non-commutativity and the rank rule. `combine` intentionally
+  drops `frame_of_reference`.
+- **Tasks 6/7 infra:** the new `tests/semantic/test_properties.py` basename collided
+  with `tests/dimensional/test_properties.py` under pytest's prepend import mode, so
+  empty `tests/__init__.py`, `tests/dimensional/__init__.py`, and
+  `tests/semantic/__init__.py` package markers were added.
+- **Scope note:** `frame_of_reference` is not checked in `ADD`/`SUB` (matches the v5.0
+  `compatible()` rule: dimension + tag + rank only); cross-frame addition is deferred
+  to a later tensor/relativity stage. Recorded in `docs/spec-notes.md`.
