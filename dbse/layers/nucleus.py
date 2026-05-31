@@ -6,12 +6,15 @@ from typing import ClassVar
 
 from dbse.contracts.context import HaltReason, PipelineContext
 from dbse.contracts.proof import Proof, ProofLevel
+from dbse.nucleus.constants import STANDARD_GRAVITY
 from dbse.nucleus.errors import NucleusError
 from dbse.nucleus.monitor import ContinuousInvariantMonitor
+from dbse.nucleus.quantities import membrane_quantities_si
 from dbse.nucleus.select_solver import SolverKind, select_solver
 from dbse.nucleus.solve_algebraic import solve_algebraic
 from dbse.nucleus.solve_ode import solve_linear_ode_1
 from dbse.nucleus.tinfo import assign_proof_level, compute_tinfo
+from dbse.nucleus.z3_verify import verify_weight_force
 from dbse.ribosome.cache import CacheEntry, SemanticCache
 
 
@@ -101,8 +104,6 @@ class Nucleus:
             return ctx
         solver_path: list[str] = []
         required = str(ctx.config.get("required_proof_level", "P2"))
-        if required in ("P0", "P1", "AXIOMATIC_PROOF", "VERIFIED_NUMERIC"):
-            solver_path.append("domain_switch:z3-deferred-stage7")
         try:
             result = solve_algebraic(ctx)
         except NucleusError as exc:
@@ -111,7 +112,22 @@ class Nucleus:
             return ctx
         solver_path.extend(result.solver_path)
         proof = Proof(solver_path=solver_path)
+        quantities = membrane_quantities_si(ctx.membrane) if ctx.membrane else {}
+        if required in ("P1", "VERIFIED_NUMERIC", "P0", "AXIOMATIC_PROOF"):
+            ok, z3_steps = verify_weight_force(
+                mass=quantities.get("mass", 0.0),
+                g=float(ctx.config.get("gravity", STANDARD_GRAVITY)),
+                force=result.value,
+                budget_ms=int(ctx.config.get("z3_budget_ms", 100)),
+            )
+            proof.z3_steps = z3_steps
+            if ok:
+                proof.solver_path.append("z3:verified")
+            else:
+                proof.solver_path.append("domain_switch:z3-timeout")
         level, confidence = assign_proof_level(proof)
+        if "z3:verified" in proof.solver_path:
+            level = ProofLevel.P1
         tinfo = compute_tinfo(proof)
         proof.level = level
         proof.tinfo = tinfo
