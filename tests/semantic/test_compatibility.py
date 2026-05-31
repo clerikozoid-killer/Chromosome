@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from dbse.semantic import Operator, SemanticTypeError
+from dbse.contracts.affine import AffineType
+from dbse.contracts.dimensions import Dimension
+from dbse.dimensional import DimensionError
+from dbse.semantic import Operator, SemanticTypeError, affine, check_compatible, compatible
 
 
 def test_semantic_type_error_is_a_type_error() -> None:
@@ -16,3 +19,56 @@ def test_semantic_type_error_is_a_type_error() -> None:
 def test_operator_has_the_six_kinds() -> None:
     names = {op.name for op in Operator}
     assert names == {"ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "DOT", "CROSS"}
+
+
+def test_add_same_tag_is_compatible_and_returns_that_type() -> None:
+    result = check_compatible(affine("Energy"), affine("Energy"), Operator.ADD)
+    assert result == affine("Energy")
+    assert compatible(affine("Energy"), affine("Energy"), Operator.ADD)
+
+
+def test_add_energy_and_torque_raises_semantic_type_error() -> None:
+    # Same dimension, different tag AND rank -> the L1.5 collision.
+    with pytest.raises(SemanticTypeError):
+        check_compatible(affine("Energy"), affine("Torque"), Operator.ADD)
+    assert not compatible(affine("Energy"), affine("Torque"), Operator.ADD)
+
+
+def test_add_error_message_mentions_operands_and_suggestion() -> None:
+    with pytest.raises(SemanticTypeError) as excinfo:
+        check_compatible(affine("Energy"), affine("Torque"), Operator.ADD)
+    message = str(excinfo.value)
+    assert "Energy" in message
+    assert "Torque" in message
+    assert "ADD" in message
+    # Suggestion advertises the known fusion.
+    assert "Work" in message and "Heat" in message
+
+
+def test_add_work_and_heat_fuses_to_internal_energy() -> None:
+    result = check_compatible(affine("Work"), affine("Heat"), Operator.ADD)
+    assert result == affine("InternalEnergy")
+    assert compatible(affine("Work"), affine("Heat"), Operator.ADD)
+
+
+def test_add_unlike_dimension_raises_dimension_error_not_semantic() -> None:
+    # Energy [M L^2 T^-2] + Force [M L T^-2] differ in dimension: the L1 gate
+    # must fire first (DimensionError), NOT a SemanticTypeError. This proves
+    # L1.5 reuses L1 pruning.
+    with pytest.raises(DimensionError):
+        check_compatible(affine("Energy"), affine("Force"), Operator.ADD)
+    assert not compatible(affine("Energy"), affine("Force"), Operator.ADD)
+
+
+def test_subtract_follows_the_same_rules() -> None:
+    assert compatible(affine("Energy"), affine("Energy"), Operator.SUBTRACT)
+    with pytest.raises(SemanticTypeError):
+        check_compatible(affine("Energy"), affine("Torque"), Operator.SUBTRACT)
+
+
+def test_add_same_dimension_same_tag_different_rank_is_rejected() -> None:
+    # Two "Energy"-tagged values that disagree on rank.
+    scalar = affine("Energy")
+    pseudo = AffineType(Dimension.of(1, 2, -2), "Energy", tensor_rank=1)
+    with pytest.raises(SemanticTypeError):
+        check_compatible(scalar, pseudo, Operator.ADD)
