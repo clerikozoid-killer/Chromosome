@@ -5,8 +5,8 @@ The L1 functions ``check_add`` / ``check_subtract`` remain the single source of
 *semantic* layer (tag + tensor rank, plus whitelisted fusions) on top. It never
 re-implements ``a.dimension == b.dimension``.
 
-Only ``ADD``/``SUBTRACT`` are handled here; ``DOT``/``CROSS`` (Task 4) and
-``MULTIPLY``/``DIVIDE`` (Task 5) are added in later tasks.
+``ADD``/``SUBTRACT``, ``DOT`` and ``CROSS`` are handled here; ``MULTIPLY``/``DIVIDE``
+(Task 5) are added in a later task.
 """
 
 from __future__ import annotations
@@ -16,6 +16,11 @@ from dbse.dimensional import DimensionError, check_add, check_subtract
 from dbse.semantic.errors import SemanticTypeError
 from dbse.semantic.operators import Operator
 from dbse.semantic.tags import _TAGS, ADDITIVE_FUSIONS
+
+# Structural (non-registry) tags used by tensor operators.
+_SCALAR = "Scalar"
+_POLAR_VECTOR = "PolarVector"
+_AXIAL_VECTOR = "AxialVector"
 
 
 def compatible(a: AffineType, b: AffineType, op: Operator) -> bool:
@@ -36,6 +41,10 @@ def check_compatible(a: AffineType, b: AffineType, op: Operator) -> AffineType:
     """
     if op in (Operator.ADD, Operator.SUBTRACT):
         return _check_additive(a, b, op)
+    if op is Operator.DOT:
+        return _check_dot(a, b)
+    if op is Operator.CROSS:
+        return _check_cross(a, b)
     raise SemanticTypeError(f"Unsupported operator: {op!r}")
 
 
@@ -53,7 +62,23 @@ def _check_additive(a: AffineType, b: AffineType, op: Operator) -> AffineType:
         spec = _TAGS[fused]
         return AffineType(a.dimension, fused, spec.tensor_rank, a.frame_of_reference)
 
-    raise SemanticTypeError(_mismatch_message(a, b, op))
+    raise SemanticTypeError(_mismatch_message(a, b, op, _additive_suggestion()))
+
+
+def _check_dot(a: AffineType, b: AffineType) -> AffineType:
+    if a.tensor_rank == 1 and b.tensor_rank == 1 and a.dimension == b.dimension:
+        return AffineType(a.dimension * b.dimension, _SCALAR, tensor_rank=0)
+    raise SemanticTypeError(
+        _mismatch_message(a, b, Operator.DOT, "DOT requires two rank-1 vectors of equal dimension.")
+    )
+
+
+def _check_cross(a: AffineType, b: AffineType) -> AffineType:
+    if a.semantic_tag == b.semantic_tag == _POLAR_VECTOR:
+        return AffineType(a.dimension * b.dimension, _AXIAL_VECTOR, tensor_rank=1)
+    raise SemanticTypeError(
+        _mismatch_message(a, b, Operator.CROSS, "CROSS requires two PolarVector operands.")
+    )
 
 
 def _additive_suggestion() -> str:
@@ -64,11 +89,11 @@ def _additive_suggestion() -> str:
     return "Did you mean: " + "; ".join(examples) + "?"
 
 
-def _mismatch_message(a: AffineType, b: AffineType, op: Operator) -> str:
+def _mismatch_message(a: AffineType, b: AffineType, op: Operator, suggestion: str) -> str:
     return (
         "Semantic mismatch at L1.5\n"
         f"  Left:  {a}\n"
         f"  Right: {b}\n"
         f"  Operation: {op.name}\n"
-        f"  Suggestion: {_additive_suggestion()}"
+        f"  Suggestion: {suggestion}"
     )

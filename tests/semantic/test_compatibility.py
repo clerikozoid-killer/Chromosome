@@ -72,3 +72,36 @@ def test_add_same_dimension_same_tag_different_rank_is_rejected() -> None:
     pseudo = AffineType(Dimension.of(1, 2, -2), "Energy", tensor_rank=1)
     with pytest.raises(SemanticTypeError):
         check_compatible(scalar, pseudo, Operator.ADD)
+
+
+def test_dot_requires_two_rank_one_equal_dimension_vectors() -> None:
+    v = affine("Velocity")  # rank 1
+    result = check_compatible(v, v, Operator.DOT)
+    assert result.tensor_rank == 0                      # dot of vectors -> scalar
+    assert result.semantic_tag == "Scalar"
+    assert result.dimension == Dimension.of(0, 2, -2)   # velocity^2
+    assert compatible(v, v, Operator.DOT)
+
+
+def test_dot_rejects_a_scalar_operand() -> None:
+    with pytest.raises(SemanticTypeError) as excinfo:
+        check_compatible(affine("Energy"), affine("Velocity"), Operator.DOT)
+    assert "DOT" in str(excinfo.value)
+
+
+def test_dot_rejects_unequal_dimension_vectors() -> None:
+    assert not compatible(affine("Velocity"), affine("Force"), Operator.DOT)
+
+
+def test_cross_requires_two_polar_vectors() -> None:
+    p = AffineType(Dimension.of(0, 1), "PolarVector", tensor_rank=1)
+    result = check_compatible(p, p, Operator.CROSS)
+    assert result.tensor_rank == 1                 # cross -> (pseudo)vector
+    assert result.semantic_tag == "AxialVector"
+    assert compatible(p, p, Operator.CROSS)
+
+
+def test_cross_rejects_non_polar_vectors() -> None:
+    with pytest.raises(SemanticTypeError) as excinfo:
+        check_compatible(affine("Velocity"), affine("Velocity"), Operator.CROSS)
+    assert "CROSS" in str(excinfo.value)
