@@ -8,7 +8,6 @@ from dbse.ribosome.cache import CacheEntry, SemanticCache, _StoredEntry
 
 def test_forged_entry_without_valid_hmac_is_rejected() -> None:
     cache = SemanticCache(secret="production-secret", ttl_seconds=3600, max_entries=16)
-    cache._store["evil"] = cache._store.get("evil")  # noqa: SLF001 — ensure dict exists
     cache._store["evil"] = _StoredEntry(  # noqa: SLF001
         entry=CacheEntry(
             ast=AST(root=ASTNode(kind="OBJECT", op="x", value="poison")),
