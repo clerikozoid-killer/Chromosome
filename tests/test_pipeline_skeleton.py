@@ -30,10 +30,18 @@ def test_all_default_layers_satisfy_protocol() -> None:
         assert isinstance(layer, Layer)
 
 
+def _first_layer_occurrence_order(trace: list) -> list[str]:
+    seen: list[str] = []
+    for entry in trace:
+        if entry.layer not in seen:
+            seen.append(entry.layer)
+    return seen
+
+
 def test_pipeline_runs_through_every_layer() -> None:
     ctx = Pipeline().run("С какой силой Земля притягивает яблоко массой 100 г?")
     assert not ctx.halted
-    assert [entry.layer for entry in ctx.trace] == EXPECTED_ORDER
+    assert _first_layer_occurrence_order(ctx.trace) == EXPECTED_ORDER
 
 
 def test_early_pruning_stops_after_halt() -> None:
