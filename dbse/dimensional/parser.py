@@ -59,8 +59,14 @@ def _evaluate(tokens: list[tuple[str, str]], original: str) -> Dimension:
                 continue
             raise DimensionError(f"Unexpected operator {val!r} in unit expression {original!r}")
         # kind is "ident" or "int": a factor, optionally raised to an integer power.
-        # A bare integer literal (e.g. the "1" in "1/s") is a dimensionless factor.
-        dim = DIMENSIONLESS if kind == "int" else resolve(val)
+        # Only the literal "1" is a valid dimensionless factor (e.g. the "1" in "1/s").
+        # Any other bare integer is malformed input (e.g. the "3" in the typo "m3").
+        if kind == "int" and val == "1":
+            dim = DIMENSIONLESS
+        elif kind == "int":
+            raise DimensionError(f"Unexpected number {val!r} in unit expression {original!r}")
+        else:
+            dim = resolve(val)
         i += 1
         if i < n and tokens[i] == ("op", "^"):
             i += 1

@@ -42,3 +42,10 @@ def test_caret_without_exponent_raises() -> None:
 def test_unknown_unit_in_expression_raises() -> None:
     with pytest.raises(DimensionError):
         parse_unit("kg*zorp")
+
+
+def test_missing_caret_is_rejected() -> None:
+    # "m3" is a typo for "m^3"; a bare integer after a unit must not be silently
+    # swallowed as dimensionless.
+    with pytest.raises(DimensionError):
+        parse_unit("m3")
