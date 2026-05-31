@@ -35,6 +35,12 @@ L7  EXPRESSION      (constrained LLM styling)
   (`dbse/semantic/`). `compatible()`/`check_compatible()` навешивают семантику
   поверх L1-pruning (`check_add`/`check_subtract`). Интеграция в слой
   `L1.5.AFFINE_TYPES` — после L0 (Этап 3).
+- Этап 3 — L0 MEMBRANE + L0.5 STS Typing: ✅ строгая Pydantic-схема выхода
+  (`dbse/membrane/`, `extra="forbid"`, валидация ссылок и единиц через L1
+  `parse_unit`), детерминированный fallback-парсер, провайдер-агностичный
+  `ParserAdapter`; rule-based классификатор запросов (`dbse/sts/`). Слои
+  `L0.MEMBRANE`/`L0.5.STS_TYPING` подключены: схема-violation → `CLARIFICATION`,
+  `OPINION` → `UNHANDLED`. **Закрывает уязвимость №2 (Prompt Injection).**
 
 ## Разработка
 

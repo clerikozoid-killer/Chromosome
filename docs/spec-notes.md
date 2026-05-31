@@ -33,6 +33,35 @@
 - Слой `dbse/layers/affine_types.py` остаётся pass-through до Этапа 3 (как
   `dbse/layers/dimensional.py` на Этапе 1).
 
+## L0 / L0.5 (Stage 3) — принятые решения
+- **Pydantic v2** — первая runtime-зависимость (спека §2/§6 требует строгую
+  Pydantic-схему). Добавлен `pydantic.mypy` plugin (strict mypy). До этого
+  `dependencies = []`.
+- **Схема — граница песочницы.** `extra="forbid"` на всех моделях ⇒ LLM не может
+  сгенерировать `INVARIANT`/`CONTEXT`/`OPERATOR` или любое off-schema поле;
+  `question_type` — закрытый enum; единицы валидируются через L1 `parse_unit`
+  (переиспользование, не дублирование); ссылки (`ref`/`from`/`to`/`target.ref`)
+  обязаны резолвиться в объявленный `OBJECT`. Любой выход за схему →
+  `MembraneError` → слой `halt(CLARIFICATION)` (никакого «молчаливого
+  дополнения»).
+- **Детерминированный fallback-парсер** прогоняет все тесты (без сети/LLM).
+  Реальный LLM-провайдер — вне Stage 3; зашит только seam `ParserAdapter` +
+  детерминированная реализация. Парсер не бросает на обычном NL: вытаскивает
+  `value+unit` (единицы — через L1), отбрасывает нерезолвимое, всегда отдаёт
+  схема-валидный минимум (один `obj_1`).
+- **Routing** (`dbse/sts/ROUTES`) пока только записывается в trace и обрабатывает
+  `OPINION → UNHANDLED`; реальный пропуск слоёв по маршруту — позже (downstream-
+  слои ещё заглушки). Порядок маркеров классификатора: OPINION → DEFINITION →
+  MATH_PROVE → PHYSICS_COMPUTE → AMBIGUOUS.
+- **Scope:** интеграция L1/L1.5 (навешивание `AffineType` на узлы AST) — Этап 4
+  (RIBOSOME), не здесь. `dbse/layers/{dimensional,affine_types}.py` остаются
+  pass-through. Кириллические единицы (`г`, `м`) пока не резолвятся в L1 — это
+  существующий тех-долг L1, поэтому такие величины fallback-парсер отбрасывает.
+- **QA-гейт:** уровни 1 (юнит: schema/adapter/layer/classifier), 5 (adversarial:
+  prompt injection — `tests/membrane/test_adversarial.py`), 7 (parsing accuracy —
+  детерминированный стенд `tests/membrane/test_parse_accuracy.py` + корпус
+  `cases/parse/membrane_parse.jsonl`; реальный LLM-eval — мягкий гейт, позже).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).
