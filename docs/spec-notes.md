@@ -134,6 +134,16 @@
 - **Слой L2** после L1.5 в `default_layers()` (как в skeleton Stage 0).
 - **QA-гейт:** уровни 1 (entropy/classify/layer) + 5 (`test_adversarial.py`).
 
+## L6 (Stage 9) — принятые решения
+- **Skeleton без LLM:** `build_graph(ast, solution, membrane)` → `NarrativeGraph` →
+  `to_text()` через шаблоны `TemplateSpec`.
+- **QUANTITY-only MVP:** обход AST; force берёт `value`/`unit` из `ctx.solution`.
+- **Forbidden metaphors** — whitelist структурный: шаблоны не содержат
+  `хочет`/`любит`/…; список дублируется в `ctx.narrative["forbidden_metaphors"]`
+  для L7 constrained styling.
+- **Skip:** нет `ast` или `solution` → `skipped:no-ast-or-solution`.
+- **QA-гейт:** уровни 1 (templates/build/render/layer) + 2 (`test_properties.py`).
+
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.
   Решить при ужесточении грамматики (нужно ли вообще, или это out-of-scope для unit-строк).

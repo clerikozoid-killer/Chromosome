@@ -63,6 +63,9 @@ L7  EXPRESSION      (constrained LLM styling)
 - Этап 8 — L2 MODEL LATTICE: ✅ rule-based `P(Model|Context)`, `T_ambig = H/log(N)`,
   пороги `<0.3` / `0.3–0.6` / `≥0.6` → `AMBIGUITY_HALT` (`dbse/lattice/`).
   **Закрывает уязвимость контекстной неоднозначности.** **QA:** уровни 1 + 5.
+- Этап 9 — L6 NARRATIVE: ✅ детерминированный narrative graph из AST + skeleton-текст
+  без LLM (`dbse/narrative/`); шаблоны с `allowed_verbs` / `forbidden_metaphors`.
+  **Закрывает уязвимость №4 (ELI5 hallucination) на уровне skeleton.** **QA:** 1 + 2.
 
 ## Разработка
 
