@@ -1,4 +1,7 @@
-"""L1 DIMENSIONAL ANALYSIS — SI dimension algebra. Stub; logic in Stage 1."""
+"""L1 DIMENSIONAL ANALYSIS — SI dimension algebra (primitives in ``dbse/dimensional/``).
+
+Layer hook is pass-through; dimensional checks run in MEMBRANE validation and RIBOSOME compile.
+"""
 
 from __future__ import annotations
 

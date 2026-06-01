@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from dbse.contracts.context import PipelineContext
+from dbse.contracts.context import HaltReason, PipelineContext
 from dbse.cytoplasm.plugins.classical_mechanics import ClassicalMechanicsPlugin
 from dbse.cytoplasm.plugins.fluid_mechanics import FluidMechanicsPlugin
 from dbse.cytoplasm.registry import PluginRegistry
+from dbse.knowledge.errors import CoreViolationError
+from dbse.knowledge.guard import assert_no_core_violation
 
 
 def default_registry() -> PluginRegistry:
@@ -39,6 +41,17 @@ class Cytoplasm:
         if result.errors:
             ctx.record(self.name, note=f"plugin-error:{hint}", errors=result.errors)
             return ctx
+        for constraint in result.constraints:
+            try:
+                assert_no_core_violation(constraint.expression)
+            except CoreViolationError as exc:
+                ctx.halt(HaltReason.CORE_VIOLATION, str(exc))
+                ctx.record(
+                    self.name,
+                    note="core-violation",
+                    expression=constraint.expression,
+                )
+                return ctx
         ctx.constraints = result.constraints
         ctx.invariants = result.invariants
         ctx.domain_model = result.domain_model

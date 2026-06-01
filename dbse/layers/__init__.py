@@ -1,4 +1,4 @@
-"""Processing layers L0..L7 (Stage 0: pass-through stubs)."""
+"""Processing layers L0..L7."""
 
 from dbse.layers.affine_types import AffineTypeChecker
 from dbse.layers.base import Layer, PassThroughLayer

@@ -1,4 +1,4 @@
-"""Stage 0 tests: the end-to-end conveyor wiring (all layers are stubs)."""
+"""Pipeline wiring tests: layer order, early pruning, default_layers."""
 
 from __future__ import annotations
 

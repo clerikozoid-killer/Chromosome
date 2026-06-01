@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from dbse.contracts.context import PipelineContext
+from dbse.knowledge.core import CORE
 from dbse.layers import (
     AffineTypeChecker,
     Cytoplasm,
@@ -24,19 +25,22 @@ from dbse.layers import (
     StsTyping,
 )
 from dbse.layers.base import Layer
+from dbse.ribosome.cache import SemanticCache
 
 
 def default_layers() -> list[Layer]:
     """The canonical L0..L7 ordering from the spec pipeline."""
+    core_version = CORE.version_token()
+    cache = SemanticCache(secret="dev-cache-secret")
     return [
         Membrane(),            # L0
         StsTyping(),           # L0.5
         DimensionalAnalysis(),  # L1
         AffineTypeChecker(),   # L1.5
         ModelLattice(),        # L2
-        Ribosome(),            # L3
+        Ribosome(cache=cache, core_version=core_version),
         Cytoplasm(),           # L4
-        Nucleus(),             # L5
+        Nucleus(cache=cache, core_version=core_version),
         NarrativeGraph(),      # L6
         Expression(),          # L7
     ]

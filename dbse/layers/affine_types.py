@@ -1,4 +1,7 @@
-"""L1.5 AFFINE TYPES — semantic type checking. Stub; logic in Stage 2."""
+"""L1.5 AFFINE TYPES — semantic compatibility (primitives in ``dbse/semantic/``).
+
+Layer hook is pass-through; affine types attach in RIBOSOME ``compile``.
+"""
 
 from __future__ import annotations
 

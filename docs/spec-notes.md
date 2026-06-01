@@ -56,7 +56,7 @@
 - **Scope:** интеграция L1/L1.5 (навешивание `AffineType` на узлы AST) — Этап 4
   (RIBOSOME), не здесь. `dbse/layers/{dimensional,affine_types}.py` остаются
   pass-through. Кириллические единицы (`г`, `м`) пока не резолвятся в L1 — это
-  существующий тех-долг L1, поэтому такие величины fallback-парсер отбрасывает.
+  частично закрыто: нормализация `г`→`g`, `кг`→`kg`, `м`→`m` в `DeterministicParser`.
 - **QA-гейт:** уровни 1 (юнит: schema/adapter/layer/classifier), 5 (adversarial:
   prompt injection — `tests/membrane/test_adversarial.py`), 7 (parsing accuracy —
   детерминированный стенд `tests/membrane/test_parse_accuracy.py` + корпус
@@ -143,6 +143,45 @@
   для L7 constrained styling.
 - **Skip:** нет `ast` или `solution` → `skipped:no-ast-or-solution`.
 - **QA-гейт:** уровни 1 (templates/build/render/layer) + 2 (`test_properties.py`).
+
+## L7 (Stage 10) — принятые решения
+- **Схема:** `ExpressionOutput` (`extra=forbid`) — три стиля + `metaphors_used`.
+- **Валидатор:** все числовые токены из skeleton обязаны присутствовать в каждом стиле;
+  `forbidden_metaphors` из L6 — case-insensitive запрет; `metaphors_used` только из whitelist.
+- **Fallback без LLM:** `style_fallback` — префиксы eli5/academic + business с `value`/`unit`
+  и повтор skeleton для сохранения чисел; используется в тестах и как offline-путь слоя.
+- **Skip:** нет `ctx.narrative` → `skipped:no-narrative`.
+- **QA-гейт:** уровни 1 (schema/validator/fallback/layer) + 5 (`test_adversarial.py`).
+
+## Core / Hypothesis (Stage 11) — принятые решения
+- **Core:** `CoreTruthLayer` с `MappingProxyType` аксиом (`newton_2`, …); `version_token()`
+  = SHA256(JSON axioms)[:8] для `SemanticCache` invalidation.
+- **Hypothesis:** `HypothesisLayer.add_hypothesis` — confidence ≥ 0.1, guard на statement.
+- **Guard:** regex CRISPR `F=m*a^2` / `**2`; явные `contradict` + statement Core.
+- **Pipeline:** L4 CYTOPLASM проверяет `constraint.expression` до записи в ctx;
+  нарушение → `HaltReason.CORE_VIOLATION`.
+- **Cache wiring:** `default_layers()` — общий `SemanticCache`, `core_version=CORE.version_token()`
+  для Ribosome и Nucleus.
+- **QA-гейт:** уровни 1 (core/hypothesis/guard/cache wiring) + 5 (CRISPR adversarial + pipeline).
+
+## Production API (Stage 12) — принятые решения
+- **Endpoints:** `POST /api/v5/solve`, `POST /api/v5/clarify` (FastAPI + OpenAPI).
+- **Mapper:** `context_to_solve_response` / `context_to_clarify_response` — ключи по спеке §5;
+  clarify берёт `candidates` из `ctx.model_lattice`.
+- **Visualizations:** `proof_trace_mermaid(ctx)` + `ast_hash` в `_visualizations`.
+- **CLI:** `dbse-api` → uvicorn на `dbse.api.app:app`.
+- **QA-гейт:** уровни 1 (schemas/mapper/mermaid) + contract + httpx ASGI tests.
+
+## Mentor CLI (Stage M) — принятые решения
+- **Cases:** JSONL в `cases/**/*.jsonl`; `load_cases` → frozen `Case` dataclass.
+- **Verdict:** `judge(ctx, case)` — категории `ok|parse|solver|ambiguity`; без записи в Core.
+- **Run:** `run_cases` → `verdicts/YYYY-MM-DD.jsonl`; `dbse-mentor run`.
+- **QA-гейт:** loader, verdict, batch run, `test_core_guard` (Mentor не мутирует Core).
+- **MVP scope:** только `dbse-mentor run`; `triage`/`promote`/`report` — ROADMAP, не план 2026-05-31.
+
+## Сводка MVP (этапы 0–12 + M)
+
+См. [`docs/IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md). E2E DoD: `tests/test_e2e_dod.py`.
 
 ## Технический долг L1 (из финального ревью, отложено — не блокирует Stage 2)
 - Парсер мягок к «битым» операторам: `"m*"`, `"/s"`, `"m**s"` не отвергаются.

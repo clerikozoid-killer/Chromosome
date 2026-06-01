@@ -1,0 +1,2 @@
+{"id":"apple_weight","query":"С какой силой Земля притягивает яблоко массой 100г?","domain_hint":"classical_mechanics","expected":{"value":0.980665,"unit":"N","tolerance":0.01},"proof_level":"P2","oracle":"analytic"}
+{"id":"falling_ode","query":"dv/dt = g - 0.1 v","domain_hint":"classical_mechanics","expected":{"proof_level":"P2"},"oracle":"metamorphic"}

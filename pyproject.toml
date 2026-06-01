@@ -10,7 +10,17 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [{ name = "Chromosome Team" }]
-dependencies = ["pydantic>=2,<3", "sympy>=1.12", "scipy>=1.11", "z3-solver>=4.12"]
+dependencies = [
+    "pydantic>=2,<3",
+    "sympy>=1.12",
+    "scipy>=1.11",
+    "z3-solver>=4.12",
+    "fastapi>=0.115",
+]
+
+[project.scripts]
+dbse-api = "dbse.api.app:main"
+dbse-mentor = "dbse.mentor.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -20,6 +30,8 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "scipy>=1.11",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -49,5 +61,5 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [[tool.mypy.overrides]]
-module = ["sympy.*", "scipy.*", "z3.*"]
+module = ["sympy.*", "scipy.*", "z3.*", "fastapi.*", "uvicorn.*", "httpx.*"]
 ignore_missing_imports = true
